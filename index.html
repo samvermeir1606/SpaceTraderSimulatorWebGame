@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>CosmoTrader OS v1.7</title>
+    <title>CosmoTrader OS v1.9</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -157,7 +157,6 @@
         .alert-text { color: red; font-weight: bold; }
         .upgrade-preview { color: #008000; font-weight: bold; }
 
-        /* WIN SCREEN MODAL MODIFICATIONS */
         .win-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -206,7 +205,7 @@
             border-right: 2px solid var(--shadow);
             border-bottom: 2px solid var(--shadow);
             background: var(--face);
-            max-width: 110px;
+            max-width: 90px;
         }
 
         .dock-tab.active-tab {
@@ -218,6 +217,7 @@
         }
 
         .market-actions-cell { display: flex; gap: 4px; flex-wrap: wrap; }
+        .card { border: 1px solid var(--shadow); padding: 10px; margin-bottom: 10px; background: #fafafa; }
     </style>
 </head>
 <body>
@@ -226,18 +226,18 @@
     <div id="win-screen" class="win-overlay hidden">
         <div class="win-dialog">
             <div class="title-bar" style="margin-bottom:15px;">
-                <span>📢 System Notification: Corporate Success</span>
+                <span>📢 Corporate Notification: Fleet Tycoon Milestone</span>
             </div>
-            <p style="font-size:16px; font-weight:bold; margin-bottom:10px;">👑 CONGRATULATIONS CAPTAIN! 👑</p>
+            <p style="font-size:16px; font-weight:bold; margin-bottom:10px;">👑 CONGRATULATIONS EMPEROR! 👑</p>
             <p style="line-height:1.5; margin-bottom:20px;">
-                You have successfully secured <strong>$50,000 Credits</strong> in liquid capital assets. The corporate board has approved your immediate luxury retirement package out of this trading cluster.
+                You reached the ultimate milestone of <strong>$100,000 Credits</strong>. Your network of factories and corporate prestige has cemented your legacy forever.
             </p>
             <button onclick="initNewGame()" style="width:100%; padding:10px; background:#ffcc00; border:2px solid #000;">BEGIN NEW RUN</button>
         </div>
     </div>
 
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v1.7 - Automation Engine</span>
+        <span>🚀 CosmoTrader OS v1.9 - Industrial Tycoon Expansion</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -260,14 +260,25 @@
         </div>
 
         <div id="view-market" class="mobile-view">
-            <h3 id="market-title" style="margin-top: 0;">Market Loading...</h3>
+            <h3 id="market-title" style="margin-top: 0;">Market Matrix</h3>
             <div class="panel" id="market-container"></div>
         </div>
 
         <div id="view-net" class="mobile-view">
             <h3 style="margin-top: 0;">Remote Market Scanners</h3>
-            <p style="color: #444; margin-top:0; font-size:11px;">Synchronized baseline price matrix before real-time event multipliers.</p>
             <div class="panel" id="net-container" style="overflow-x: auto;"></div>
+        </div>
+
+        <div id="view-contracts" class="mobile-view">
+            <h3 style="margin-top: 0;">Corporate Logistics Contracts Board</h3>
+            <p style="color: #444; margin-top:0; font-size:11px;">Fulfill requested target quotas for massive corporate financial premiums.</p>
+            <div class="panel" id="contracts-container"></div>
+        </div>
+
+        <div id="view-assets" class="mobile-view">
+            <h3 style="margin-top: 0;">Real Estate & Automated Production Sites</h3>
+            <p style="color: #444; margin-top:0; font-size:11px;">Factories accumulate 1 asset reserve unit every time you jump or wait turns.</p>
+            <div class="panel" id="assets-container"></div>
         </div>
 
         <div id="view-upgrades" class="mobile-view">
@@ -282,12 +293,14 @@
 <div class="taskbar-dock">
     <div class="dock-tab active-tab" id="tab-status" onclick="switchMobileView('status')">📟 Status</div>
     <div class="dock-tab" id="tab-market" onclick="switchMobileView('market')">🛒 Market</div>
-    <div class="dock-tab" id="tab-net" onclick="switchMobileView('net')">🌐 SysNet</div>
-    <div class="dock-tab" id="tab-upgrades" onclick="switchMobileView('upgrades')">🔧 Drydock</div>
+    <div class="dock-tab" id="tab-net" onclick="switchMobileView('net')">🌐 Net</div>
+    <div class="dock-tab" id="tab-contracts" onclick="switchMobileView('contracts')">💼 Jobs</div>
+    <div class="dock-tab" id="tab-assets" onclick="switchMobileView('assets')">🏭 Assets</div>
+    <div class="dock-tab" id="tab-upgrades" onclick="switchMobileView('upgrades')">🔧 Tech</div>
 </div>
 
 <script>
-const WIN_TARGET = 50000;
+const WIN_TARGET = 100000; // Increased to account for factory wealth acceleration
 const MARKET_SPREAD = 0.15; 
 
 const COMMODITIES = {
@@ -297,9 +310,9 @@ const COMMODITIES = {
 };
 
 const PLANET_TYPES = {
-    "Agricultural": { modifiers: { food: 0.5, ore: 1.1, tech: 1.5 }, fuelCost: 4, repairCost: 15, dockFee: 40 },
-    "Mining":       { modifiers: { food: 1.3, ore: 0.4, tech: 1.2 }, fuelCost: 1, repairCost: 20, dockFee: 25 },
-    "Industrial":   { modifiers: { food: 1.5, ore: 1.3, tech: 0.5 }, fuelCost: 2, repairCost: 8,  dockFee: 60 }
+    "Agricultural": { modifiers: { food: 0.5, ore: 1.1, tech: 1.5 }, fuelCost: 4, repairCost: 15, dockFee: 40, factoryDesc: "Hydroponic Greenhouse ($4,000) - Produces Organic Food", factoryCost: 4000, factoryProduces: "food" },
+    "Mining":       { modifiers: { food: 1.3, ore: 0.4, tech: 1.2 }, fuelCost: 1, repairCost: 20, dockFee: 25, factoryDesc: "Deep Core Driller ($6,000) - Produces Heavy Ore", factoryCost: 6000, factoryProduces: "ore" },
+    "Industrial":   { modifiers: { food: 1.5, ore: 1.3, tech: 0.5 }, fuelCost: 2, repairCost: 8,  dockFee: 60, factoryDesc: "Micro-Fabrication Array ($12,000) - Produces Quantum Chips", factoryCost: 12000, factoryProduces: "tech" }
 };
 
 const PLANET_NAMES = ["Alpha Centauri", "Kepler-186", "Gliese-581", "Tau Ceti", "Epsilon Eridani", "Wolf 359"];
@@ -314,7 +327,7 @@ const SYSTEM_EVENTS = [
 
 let gameState = {
     player: {
-        credits: 1200,
+        credits: 1500,
         fuel: 100,
         maxFuel: 100,
         hull: 100,
@@ -322,10 +335,12 @@ let gameState = {
         fuelBurnRate: 15,
         hullMod: 1.0, 
         location: "",
-        cargo: { food: 0, ore: 0, tech: 0 },
-        upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 }
+        cargo: { food: 0, ore: 0, tech: 0 }
     },
+    upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 },
     planets: {},
+    factories: {}, // Format: { "Planet Name": storageAmt }
+    contracts: [], // Active jobs list array
     currentEvent: SYSTEM_EVENTS[0],
     nextEvent: SYSTEM_EVENTS[0],
     activeView: 'status'
@@ -339,7 +354,6 @@ function generateGalaxy() {
     shuffledNames.forEach((name, idx) => {
         let type = keys[idx % keys.length];
         let pConfig = PLANET_TYPES[type];
-
         let marketPrices = {};
         for (let key in COMMODITIES) {
             let variance = 0.9 + Math.random() * 0.2; 
@@ -350,10 +364,30 @@ function generateGalaxy() {
     return generatedPlanets;
 }
 
+function generateNewContract() {
+    let planetKeys = Object.keys(gameState.planets);
+    let targetPlanet = planetKeys[Math.floor(Math.random() * planetKeys.length)];
+    let items = Object.keys(COMMODITIES);
+    let targetItem = items[Math.floor(Math.random() * items.length)];
+    let amt = Math.floor(Math.random() * 8) + 4; // 4 to 12 items
+    
+    let baseItemVal = getMarketPriceData(targetPlanet, targetItem).buyCost;
+    let payout = Math.round(baseItemVal * amt * 1.55); // pays roughly a 55% profit premium index bonus
+
+    return {
+        targetPlanet: targetPlanet,
+        itemKey: targetItem,
+        amount: amt,
+        payout: payout,
+        id: Math.random().toString(36).substring(2, 7)
+    };
+}
+
 function initNewGame() {
-    document.getElementById('win-screen').classList.add('hidden'); // Close win screen if active
+    document.getElementById('win-screen').classList.add('hidden');
     gameState.planets = generateGalaxy();
-    gameState.player.credits = 1200;
+    gameState.factories = {};
+    gameState.player.credits = 1500;
     gameState.player.fuel = 100;
     gameState.player.maxFuel = 100;
     gameState.player.hull = 100;
@@ -361,10 +395,14 @@ function initNewGame() {
     gameState.player.fuelBurnRate = 15;
     gameState.player.hullMod = 1.0;
     gameState.player.cargo = { food: 0, ore: 0, tech: 0 };
-    gameState.player.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 };
+    gameState.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 };
     gameState.player.location = Object.keys(gameState.planets)[0];
     gameState.currentEvent = SYSTEM_EVENTS[0];
     rollNextEvent();
+    
+    // Seed 2 starting jobs board postings
+    gameState.contracts = [generateNewContract(), generateNewContract()];
+    
     switchMobileView('status');
     updateUI();
 }
@@ -378,30 +416,27 @@ function executeEventCycle() {
     gameState.currentEvent = gameState.nextEvent;
     rollNextEvent();
     
-    for (let pName in gameState.planets) {
-        let planet = gameState.planets[pName];
-        let pConfig = PLANET_TYPES[planet.type];
-        for (let key in COMMODITIES) {
-            let targetBase = Math.round(COMMODITIES[key].basePrice * pConfig.modifiers[key]);
-            if (planet.dynamicPrices[key] < targetBase) planet.dynamicPrices[key] += 1;
-            if (planet.dynamicPrices[key] > targetBase) planet.dynamicPrices[key] -= 1;
-        }
+    // Advanced Processing Layer: Tick factory storage accumulations
+    for (let fName in gameState.factories) {
+        gameState.factories[fName] = Math.min(25, (gameState.factories[fName] || 0) + 2); // Produces 2 items per warp up to 25 cap limit max
+    }
+
+    // Refresh Contract Postings array loop logic
+    if (Math.random() < 0.5 && gameState.contracts.length < 3) {
+        gameState.contracts.push(generateNewContract());
     }
 }
 
 function getMarketPriceData(planetName, itemKey) {
     let planet = gameState.planets[planetName];
     let basePrice = planet.dynamicPrices[itemKey];
-    
     let ev = gameState.currentEvent;
     if (ev.affectedItem === itemKey || ev.affectedItem === "all") {
         basePrice = Math.round(basePrice * ev.multiplier);
     }
-    basePrice = Math.max(2, basePrice);
-
     return {
-        buyCost: Math.round(basePrice * (1 + MARKET_SPREAD / 2)),
-        sellValue: Math.round(basePrice * (1 - MARKET_SPREAD / 2))
+        buyCost: Math.max(2, Math.round(basePrice * (1 + MARKET_SPREAD / 2))),
+        sellValue: Math.max(1, Math.round(basePrice * (1 - MARKET_SPREAD / 2)))
     };
 }
 
@@ -410,18 +445,10 @@ function getCargoHoldCount() {
     return p.cargo.food + p.cargo.ore + p.cargo.tech;
 }
 
-// TEXT PROGRESS BAR UTILITY FUNCTION
 function getProgressBar(value, max) {
     let totalBlocks = 10;
     let filledBlocks = Math.min(totalBlocks, Math.floor((value / max) * totalBlocks));
-    let emptyBlocks = totalBlocks - filledBlocks;
-    return "[" + "█".repeat(filledBlocks) + "░".repeat(emptyBlocks) + "]";
-}
-
-function checkWinCondition() {
-    if (gameState.player.credits >= WIN_TARGET) {
-        document.getElementById('win-screen').classList.remove('hidden');
-    }
+    return "[" + "█".repeat(filledBlocks) + "░".repeat(totalBlocks - filledBlocks) + "]";
 }
 
 function travelTo(planetName) {
@@ -432,73 +459,96 @@ function travelTo(planetName) {
         
         let damage = Math.floor((Math.random() * 8) + 3) * gameState.player.hullMod; 
         gameState.player.hull = Math.max(0, Math.round(gameState.player.hull - damage));
-        
-        if (gameState.player.hull <= 0) {
-            alert("💀 HULL PLATING SHATTERED. GAME OVER.");
-            initNewGame();
-            return;
-        }
+        if (gameState.player.hull <= 0) { alert("💀 HULL BREACHED. GAME OVER."); initNewGame(); return; }
 
         executeEventCycle();
         updateUI();
-    } else {
-        alert("FUEL EXHAUSTION: Cannot initialize jump.");
-    }
+    } else { alert("FUEL EXHAUSTION."); }
 }
 
 function waitTurn() {
-    let currentPlanet = gameState.planets[gameState.player.location];
-    let fee = PLANET_TYPES[currentPlanet.type].dockFee;
-    
+    let fee = PLANET_TYPES[gameState.planets[gameState.player.location].type].dockFee;
     if (gameState.player.credits >= fee) {
         gameState.player.credits -= fee;
         executeEventCycle();
         updateUI();
+    } else { alert("💀 ASSETS SEIZED."); initNewGame(); }
+}
+
+// --- OPTION C: FACTORY OPERATIONS ---
+function purchaseFactory() {
+    let loc = gameState.player.location;
+    let type = gameState.planets[loc].type;
+    let cost = PLANET_TYPES[type].factoryCost;
+    
+    if (gameState.factories[loc] !== undefined) {
+        alert("Management Alert: Industrial infrastructure already active at this node.");
+        return;
+    }
+    if (gameState.player.credits >= cost) {
+        gameState.player.credits -= cost;
+        gameState.factories[loc] = 0; // Initialize factory with empty storage
+        updateUI();
+    } else { alert("Finance Error: Insufficient installation funding capital."); }
+}
+
+function collectFactoryCargo(fName) {
+    if (fName !== gameState.player.location) {
+        alert("Navigation Alert: You must land on-site at this planet node terminal to upload inventory stocks.");
+        return;
+    }
+    let type = gameState.planets[fName].type;
+    let pItem = PLANET_TYPES[type].factoryProduces;
+    let stock = gameState.factories[fName] || 0;
+    
+    if (stock <= 0) { alert("Production Alert: Factory collection container currently empty."); return; }
+    
+    // Load as much as cargo can physically handle
+    let freeSlots = gameState.player.cargoCapacity - getCargoHoldCount();
+    if (freeSlots <= 0) { alert("Cargo hold completely full."); return; }
+    
+    let loaded = Math.min(stock, freeSlots);
+    gameState.player.cargo[pItem] += loaded;
+    gameState.factories[fName] -= loaded;
+    updateUI();
+}
+
+// --- OPTION D: CONTRACT OPERATIONS ---
+function fulfillContract(id) {
+    let job = gameState.contracts.find(c => c.id === id);
+    if (!job) return;
+    
+    if (gameState.player.location !== job.targetPlanet) {
+        alert(`Route Matrix Alert: Contract requires delivery execution directly onto terminal node coordinates: ${job.targetPlanet}`);
+        return;
+    }
+    if (gameState.player.cargo[job.itemKey] >= job.amount) {
+        gameState.player.cargo[job.itemKey] -= job.amount;
+        gameState.player.credits += job.payout;
+        gameState.contracts = gameState.contracts.filter(c => c.id !== id); // Remove job from pool listings
+        updateUI();
+        alert(`💼 CONTRACT REVENUE GRANTED:\nProcessed cargo manifest drops. Disbursed $${job.payout} transaction credits into user ledger configuration parameters.`);
     } else {
-        alert("💀 SHIP IMPOUNDED: Insufficient balance to cover docking overhead fees. GAME OVER.");
-        initNewGame();
+        alert(`Logistics Inventory Deficit: Ship cargo manifest lacks the targeted requirement block of [ ${job.amount} units of ${COMMODITIES[job.itemKey].name} ].`);
     }
 }
 
+// REST OF CORE GAME LOOP LOGIC PRESERVED 
 function refuelShip() {
-    let currentPlanet = gameState.planets[gameState.player.location];
-    let localFuelRate = PLANET_TYPES[currentPlanet.type].fuelCost;
+    let localFuelRate = PLANET_TYPES[gameState.planets[gameState.player.location].type].fuelCost;
     let missingFuel = gameState.player.maxFuel - gameState.player.fuel;
     let cost = Math.ceil(missingFuel * localFuelRate);
-    if (cost === 0) return;
-
     if (gameState.player.credits >= cost) {
-        gameState.player.credits -= cost;
-        gameState.player.fuel = gameState.player.maxFuel;
-        updateUI();
-    } else {
-        let affordable = Math.floor(gameState.player.credits / localFuelRate);
-        if (affordable > 0) {
-            gameState.player.credits -= (affordable * localFuelRate);
-            gameState.player.fuel += affordable;
-            updateUI();
-        }
+        gameState.player.credits -= cost; gameState.player.fuel = gameState.player.maxFuel; updateUI();
     }
 }
 
 function repairShip() {
-    let currentPlanet = gameState.planets[gameState.player.location];
-    let localRepairRate = PLANET_TYPES[currentPlanet.type].repairCost;
-    let structuralDeficit = 100 - gameState.player.hull;
-    if (structuralDeficit <= 0) return;
-
-    let totalRepairCost = structuralDeficit * localRepairRate;
-    if (gameState.player.credits >= totalRepairCost) {
-        gameState.player.credits -= totalRepairCost;
-        gameState.player.hull = 100;
-        updateUI();
-    } else {
-        let affordablePoints = Math.floor(gameState.player.credits / localRepairRate);
-        if (affordablePoints > 0) {
-            gameState.player.credits -= (affordablePoints * localRepairRate);
-            gameState.player.hull += affordablePoints;
-            updateUI();
-        }
+    let localRepairRate = PLANET_TYPES[gameState.planets[gameState.player.location].type].repairCost;
+    let deficit = 100 - gameState.player.hull;
+    let cost = deficit * localRepairRate;
+    if (gameState.player.credits >= cost) {
+        gameState.player.credits -= cost; gameState.player.hull = 100; updateUI();
     }
 }
 
@@ -507,10 +557,9 @@ function buyItem(itemKey, amount = 1) {
     for(let i=0; i<amount; i++) {
         let pricing = getMarketPriceData(gameState.player.location, itemKey);
         if (getCargoHoldCount() >= gameState.player.cargoCapacity || gameState.player.credits < pricing.buyCost) break;
-        
         gameState.player.credits -= pricing.buyCost;
         gameState.player.cargo[itemKey]++;
-        planet.dynamicPrices[itemKey] = Math.round(planet.dynamicPrices[itemKey] * 1.03) + 1;
+        planet.dynamicPrices[itemKey] += Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.03));
     }
     updateUI();
 }
@@ -521,53 +570,27 @@ function sellItem(itemKey, sellAll = false) {
     for(let i=0; i<amount; i++) {
         if (gameState.player.cargo[itemKey] <= 0) break;
         let pricing = getMarketPriceData(gameState.player.location, itemKey);
-        
         gameState.player.credits += pricing.sellValue;
         gameState.player.cargo[itemKey]--;
-        planet.dynamicPrices[itemKey] = Math.max(2, Math.round(planet.dynamicPrices[itemKey] * 0.97) - 1);
+        planet.dynamicPrices[itemKey] = Math.max(2, planet.dynamicPrices[itemKey] - Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.03)));
     }
     updateUI();
 }
 
-function buyMax(itemKey) {
-    let freeSlots = gameState.player.cargoCapacity - getCargoHoldCount();
-    if(freeSlots <= 0) return;
-    buyItem(itemKey, freeSlots);
-}
+function buyMax(itemKey) { buyItem(itemKey, (gameState.player.cargoCapacity - getCargoHoldCount())); }
 
 const UPGRADE_TREE = {
-    cargo: [
-        { lvl: 1, cap: 10, cost: 0, desc: "Standard Freight Pod" },
-        { lvl: 2, cap: 25, cost: 2500, desc: "Expanded Steel Hold" },
-        { lvl: 3, cap: 60, cost: 6000, desc: "Sub-space Compression" },
-        { lvl: 4, cap: 120, cost: 12000, desc: "Giga-Bulk Cargo Hull" }
-    ],
-    engine: [
-        { lvl: 1, burn: 15, cost: 0, desc: "Conventional Drive" },
-        { lvl: 2, burn: 9, cost: 2000, desc: "Ion Micro-Thrusters" },
-        { lvl: 3, burn: 4, cost: 5000, desc: "Warp Core Bypass" }
-    ],
-    tank: [
-        { lvl: 1, max: 100, cost: 0, desc: "Standard Hazmat Pod" },
-        { lvl: 2, max: 200, cost: 1500, desc: "Reinforced Cryo-Cells" },
-        { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Grid" }
-    ],
-    plating: [
-        { lvl: 1, mod: 1.0, cost: 0, desc: "Standard Alloys" },
-        { lvl: 2, mod: 0.7, cost: 1800, desc: "Durasteel Heat-Plates" },
-        { lvl: 3, mod: 0.4, cost: 4500, desc: "Magnetic Deflector Matrix" }
-    ]
+    cargo: [{ lvl: 1, cap: 10, cost: 0, desc: "Standard Freight Pod" }, { lvl: 2, cap: 25, cost: 2500, desc: "Expanded Steel Hold" }, { lvl: 3, cap: 60, cost: 6000, desc: "Sub-space Compression" }, { lvl: 4, cap: 120, cost: 12000, desc: "Giga-Bulk Cargo Hull" }],
+    engine: [{ lvl: 1, burn: 15, cost: 0, desc: "Conventional Drive" }, { lvl: 2, burn: 9, cost: 2000, desc: "Ion Micro-Thrusters" }, { lvl: 3, burn: 4, cost: 5000, desc: "Warp Core Bypass" }],
+    tank: [{ lvl: 1, max: 100, cost: 0, desc: "Standard Hazmat Pod" }, { lvl: 2, max: 200, cost: 1500, desc: "Reinforced Cryo-Cells" }, { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Grid" }],
+    plating: [{ lvl: 1, mod: 1.0, cost: 0, desc: "Standard Alloys" }, { lvl: 2, mod: 0.7, cost: 1800, desc: "Durasteel Heat-Plates" }, { lvl: 3, mod: 0.4, cost: 4500, desc: "Magnetic Deflector Matrix" }]
 };
 
 function processUpgrade(cat) {
-    let curLvl = gameState.player.upgrades[cat + "Lvl"];
+    let curLvl = gameState.upgrades[cat + "Lvl"];
     let nextData = UPGRADE_TREE[cat].find(u => u.lvl === curLvl + 1);
-    if(!nextData) return;
-    
-    if(gameState.player.credits >= nextData.cost) {
-        gameState.player.credits -= nextData.cost;
-        gameState.player.upgrades[cat + "Lvl"]++;
-        
+    if(nextData && gameState.player.credits >= nextData.cost) {
+        gameState.player.credits -= nextData.cost; gameState.upgrades[cat + "Lvl"]++;
         if (cat === 'cargo') gameState.player.cargoCapacity = nextData.cap;
         if (cat === 'engine') gameState.player.fuelBurnRate = nextData.burn;
         if (cat === 'plating') gameState.player.hullMod = nextData.mod;
@@ -578,7 +601,7 @@ function processUpgrade(cat) {
 
 function switchMobileView(viewId) {
     gameState.activeView = viewId;
-    ['status', 'market', 'net', 'upgrades'].forEach(v => {
+    ['status', 'market', 'net', 'contracts', 'assets', 'upgrades'].forEach(v => {
         document.getElementById(`view-${v}`).classList.remove('active-view');
         document.getElementById(`tab-${v}`).classList.remove('active-tab');
     });
@@ -589,8 +612,7 @@ function switchMobileView(viewId) {
 
 function exportSave() {
     let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameState));
-    let dl = document.createElement('a'); dl.setAttribute("href", dataStr);
-    dl.setAttribute("download", "cosmotrader_save.json");
+    let dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "cosmotrader_save.json");
     document.body.appendChild(dl); dl.click(); dl.remove();
 }
 
@@ -599,16 +621,14 @@ function importSave(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            gameState = JSON.parse(e.target.result);
-            switchMobileView(gameState.activeView || 'status'); updateUI();
+            gameState = JSON.parse(e.target.result); switchMobileView(gameState.activeView || 'status'); updateUI();
         } catch (err) { alert("Format failure."); }
     };
     reader.readAsText(file);
 }
 
 function updateUI() {
-    // Intercept win parameter check immediately inside UI update phase
-    checkWinCondition();
+    if (gameState.player.credits >= WIN_TARGET) document.getElementById('win-screen').classList.remove('hidden');
 
     let p = gameState.player;
     let currentPlanet = gameState.planets[p.location];
@@ -616,17 +636,15 @@ function updateUI() {
     let localRepairRate = PLANET_TYPES[currentPlanet.type].repairCost;
     let localDockFee = PLANET_TYPES[currentPlanet.type].dockFee;
 
-    document.getElementById('news-ticker').innerText = `RADAR ANOMALIES: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nFORECAST SATELLITE TELEMETRY: Next Event scheduled -> [ ${gameState.nextEvent.text.split(':')[0]} ]`;
+    document.getElementById('news-ticker').innerText = `CURRENT RADAR EVENTS: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nLONG-RANGE SCANNER FORECAST: Next Cycle -> [ ${gameState.nextEvent.text.split(':')[0]} (${gameState.nextEvent.info}) ]`;
 
     let hullClass = p.hull < 35 ? "class='alert-text'" : "";
-    let walletProgressBar = getProgressBar(p.credits, WIN_TARGET);
-
     document.getElementById('player-stats').innerHTML = `
-        📁 <strong>Sector Location:</strong> ${p.location} (${currentPlanet.type})<br>
-        💸 <strong>Net Liquidity:</strong> $${p.credits} / $${WIN_TARGET} <span style="font-family:monospace;color:#000080;">${walletProgressBar}</span><br>
+        📁 <strong>Sector Node:</strong> ${p.location} (${currentPlanet.type})<br>
+        💸 <strong>Net Liquidity:</strong> $${p.credits} / $${WIN_TARGET} <span style="font-family:monospace;color:#000080;">${getProgressBar(p.credits, WIN_TARGET)}</span><br>
         🛡️ <span ${hullClass}><strong>Hull Structure:</strong> ${p.hull}%</span><br>
-        🔋 <strong>Fuel Cells:</strong> ${p.fuel} / ${p.maxFuel} GW<br>
-        📦 <strong>Cargo Space:</strong> ${getCargoHoldCount()} / ${p.cargoCapacity} Units
+        🔋 <strong>Fuel Reserves:</strong> ${p.fuel} / ${p.maxFuel} GW<br>
+        📦 <strong>Cargo Bay:</strong> ${getCargoHoldCount()} / ${p.cargoCapacity} Units
         <div style="padding-left:10px; font-size:12px; color:#555; margin-top:2px;">
             🌾 Food: ${p.cargo.food} | 🪨 Ore: ${p.cargo.ore} | 💾 Tech: ${p.cargo.tech}
         </div>
@@ -637,97 +655,98 @@ function updateUI() {
         </div>
     `;
 
+    // Render Navigation
     let navHTML = "";
     for (let name in gameState.planets) {
         let target = gameState.planets[name];
-        if (name === p.location) {
-            navHTML += `<div class="nav-item current-loc"><span>• ${name} (${target.type})</span><small>[ONLINE]</small></div>`;
-        } else {
-            let canWarp = p.fuel >= p.fuelBurnRate;
-            navHTML += `
-                <div class="nav-item">
-                    <div>✈ ${name} <br><small style="color:#555;">Fuel rate: $${PLANET_TYPES[target.type].fuelCost}/G</small></div>
-                    <button class="btn-sm" onclick="travelTo('${name}')" ${!canWarp ? 'disabled' : ''}>Warp (-${p.fuelBurnRate}G)</button>
-                </div>`;
-        }
+        if (name === p.location) navHTML += `<div class="nav-item current-loc"><span>• ${name} (${target.type})</span><small>[ONLINE]</small></div>`;
+        else navHTML += `<div class="nav-item"><div>✈ ${name} <br><small style="color:#555;">Fuel rate: $${PLANET_TYPES[target.type].fuelCost}/G</small></div><button class="btn-sm" onclick="travelTo('${name}')" ${p.fuel < p.fuelBurnRate ? 'disabled' : ''}>Warp (-${p.fuelBurnRate}G)</button></div>`;
     }
     document.getElementById('navigation-panel').innerHTML = navHTML;
 
-    // View 1: Local Market
+    // Render Local Market
     document.getElementById('market-title').innerText = `Local Matrix: ${currentPlanet.name}`;
     let marketHTML = `<table><tr><th>Asset</th><th>Buy</th><th>Sell</th><th>Protocols</th></tr>`;
     for (let key in COMMODITIES) {
         let pricing = getMarketPriceData(p.location, key);
         let canBuy = p.credits >= pricing.buyCost && getCargoHoldCount() < p.cargoCapacity;
-        let canSell = p.cargo[key] > 0;
-        marketHTML += `
-            <tr>
-                <td><strong>${COMMODITIES[key].name}</strong></td>
-                <td><span style="color:#a00;">$${pricing.buyCost}</span></td>
-                <td><span style="color:#080;">$${pricing.sellValue}</span></td>
-                <td>
-                    <div class="market-actions-cell">
-                        <button class="btn-sm" onclick="buyItem('${key}', 1)" ${!canBuy ? 'disabled' : ''}>+1</button>
-                        <button class="btn-sm" onclick="buyMax('${key}')" ${!canBuy ? 'disabled' : ''}>Max</button>
-                        <button class="btn-sm" onclick="sellItem('${key}', false)" ${!canSell ? 'disabled' : ''}>-1</button>
-                        <button class="btn-sm" onclick="sellItem('${key}', true)" ${!canSell ? 'disabled' : ''}>All</button>
-                    </div>
-                </td>
-            </tr>`;
+        marketHTML += `<tr><td><strong>${COMMODITIES[key].name}</strong></td><td><span style="color:#a00;">$${pricing.buyCost}</span></td><td><span style="color:#080;">$${pricing.sellValue}</span></td><td><div class="market-actions-cell"><button class="btn-sm" onclick="buyItem('${key}', 1)" ${!canBuy ? 'disabled' : ''}>+1</button><button class="btn-sm" onclick="buyMax('${key}')" ${!canBuy ? 'disabled' : ''}>Max</button><button class="btn-sm" onclick="sellItem('${key}', false)" ${p.cargo[key]<=0 ? 'disabled' : ''}>-1</button><button class="btn-sm" onclick="sellItem('${key}', true)" ${p.cargo[key]<=0 ? 'disabled' : ''}>All</button></div></td></tr>`;
     }
-    marketHTML += `</table>`;
-    document.getElementById('market-container').innerHTML = marketHTML;
+    document.getElementById('market-container').innerHTML = marketHTML + `</table>`;
 
-    // View 2: System Net
-    let netHTML = `<table><tr><th>Node Node</th><th>🌾Food</th><th>🪨Ore</th><th>💾Tech</th></tr>`;
+    // Render System Net
+    let netHTML = `<table><tr><th>Node</th><th>🌾Food</th><th>🪨Ore</th><th>💾Tech</th></tr>`;
     for (let name in gameState.planets) {
-        let foodP = getMarketPriceData(name, 'food');
-        let oreP = getMarketPriceData(name, 'ore');
-        let techP = getMarketPriceData(name, 'tech');
-        let isHere = (name === p.location) ? "style='background:#ffffd0;'" : "";
-        
-        let activeTag = (name === p.location && gameState.currentEvent.affectedItem) ? ` <small style="color:red;">[AMPLIFIED]</small>` : "";
-        netHTML += `
-            <tr ${isHere}>
-                <td><strong>${name}</strong><br><small>${gameState.planets[name].type.substring(0,4)}.${activeTag}</small></td>
-                <td>$${foodP.buyCost}/$${foodP.sellValue}</td>
-                <td>$${oreP.buyCost}/$${oreP.sellValue}</td>
-                <td>$${techP.buyCost}/$${techP.sellValue}</td>
-            </tr>`;
+        let f = getMarketPriceData(name, 'food'), o = getMarketPriceData(name, 'ore'), t = getMarketPriceData(name, 'tech');
+        netHTML += `<tr ${name===p.location?"style='background:#ffffd0;'":""}><td><strong>${name}</strong><br><small>${gameState.planets[name].type.substring(0,4)}.</small></td><td>$${f.buyCost}/$${f.sellValue}</td><td>$${o.buyCost}/$${o.sellValue}</td><td>$${t.buyCost}/$${t.sellValue}</td></tr>`;
     }
-    netHTML += `</table>`;
-    document.getElementById('net-container').innerHTML = netHTML;
+    document.getElementById('net-container').innerHTML = netHTML + `</table>`;
 
-    // View 3: Upgrades Table
+    // Render Option D: Contracts Board Wrapper
+    let jHTML = "";
+    if (gameState.contracts.length === 0) jHTML = "<p style='color:#666;'>No active contract files broadcasted right now. Check back next cycle jump.</p>";
+    gameState.contracts.forEach(job => {
+        let hasEnough = p.cargo[job.itemKey] >= job.amount;
+        let isHere = p.location === job.targetPlanet;
+        jHTML += `
+            <div class="card">
+                <strong>💼 Corporate Manifest ID: #${job.id.toUpperCase()}</strong><br>
+                📋 Deliver: <span style="font-weight:bold;color:blue;">${job.amount} units of ${COMMODITIES[job.itemKey].name}</span><br>
+                📍 Destination Node: <strong>${job.targetPlanet}</strong><br>
+                💰 Net Compensation Payout: <span style="color:green;font-weight:bold;">$${job.payout} Credits</span><br>
+                <button class="btn-sm" onclick="fulfillContract('${job.id}')" ${(!hasEnough || !isHere) ? 'disabled' : ''} style="margin-top:5px;width:100%;">
+                    ${!isHere ? "Fly to destination node to drop" : !hasEnough ? "Lacking items in cargo manifests" : "🚀 EXECUTE SECURE DROP-OFF MANIFEST"}
+                </button>
+            </div>`;
+    });
+    document.getElementById('contracts-container').innerHTML = jHTML;
+
+    // Render Option C: Assets Board Wrapper
+    let currentConfig = PLANET_TYPES[currentPlanet.type];
+    let hasFactoryHere = gameState.factories[p.location] !== undefined;
+    
+    let aHTML = `<div class="card" style="background:#e8f0f8;">
+        <strong>🏗️ Local Infrastructure Real Estate</strong><br>
+        Available Site Option: ${currentConfig.factoryDesc}<br>
+        <button class="btn-sm" onclick="purchaseFactory()" ${hasFactoryHere || p.credits < currentConfig.factoryCost ? 'disabled' : ''} style="margin-top:5px;width:100%;">
+            ${hasFactoryHere ? "🏭 Local Infrastructure Active" : "Buy Plant Infrastructure Installation Site"}
+        </button>
+    </div><h4 style='margin-bottom:5px;'>Active Owned Manufacturing Properties</h4>`;
+    
+    let factoryOwnedCount = 0;
+    for (let fName in gameState.factories) {
+        factoryOwnedCount++;
+        let fType = gameState.planets[fName].type;
+        let pItem = PLANET_TYPES[fType].factoryProduces;
+        let stock = gameState.factories[fName];
+        let onSite = p.location === fName;
+        
+        aHTML += `
+            <div class="card">
+                <strong>🏭 Automated Factory Site Node: ${fName}</strong><br>
+                Output Matrix: Accumulating <strong>${COMMODITIES[pItem].name}</strong> (2 units/jump)<br>
+                Warehouse Status: <span style="color:#000080;font-weight:bold;">${stock} / 25 Units</span> loaded.<br>
+                <button class="btn-sm" onclick="collectFactoryCargo('${fName}')" ${stock<=0 || !onSite ? 'disabled' : ''} style="margin-top:5px;width:100%;">
+                    ${!onSite ? "Dock on-site at planet node to lift cargo" : "⚡ Extract Assets into Cargo Holds"}
+                </button>
+            </div>`;
+    }
+    if (factoryOwnedCount === 0) aHTML += "<p style='color:#666;'>No active real estate deeds on file. Buy real estate sites locally at terminal ports to accelerate income parameters.</p>";
+    document.getElementById('assets-container').innerHTML = aHTML;
+
+    // Render Drydock
     let upHTML = `<tr><th>Module</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
     ['cargo', 'engine', 'tank', 'plating'].forEach(cat => {
-        let lvl = p.upgrades[cat + "Lvl"];
-        let curData = UPGRADE_TREE[cat].find(u => u.lvl === lvl);
-        let nextData = UPGRADE_TREE[cat].find(u => u.lvl === lvl + 1);
-        
-        let specString = "";
-        if (cat === 'cargo') specString = `${curData.cap} Slots`;
-        if (cat === 'engine') specString = `-${curData.burn}G/Jump`;
-        if (cat === 'tank') specString = `${curData.max}GW Max`;
-        if (cat === 'plating') specString = `${Math.round(curData.mod * 100)}% Damage`;
-
+        let lvl = gameState.upgrades[cat + "Lvl"];
+        let curData = UPGRADE_TREE[cat].find(u => u.lvl === lvl), nextData = UPGRADE_TREE[cat].find(u => u.lvl === lvl + 1);
+        let specString = cat === 'cargo' ? `${curData.cap} Slots` : cat === 'engine' ? `-${curData.burn}G/Jump` : cat === 'tank' ? `${curData.max}GW Max` : `${Math.round(curData.mod * 100)}% Damage`;
         if (nextData) {
             if (cat === 'cargo') specString += ` <span class='upgrade-preview'>➔ ${nextData.cap}</span>`;
             if (cat === 'engine') specString += ` <span class='upgrade-preview'>➔ -${nextData.burn}G</span>`;
             if (cat === 'tank') specString += ` <span class='upgrade-preview'>➔ ${nextData.max}GW</span>`;
             if (cat === 'plating') specString += ` <span class='upgrade-preview'>➔ ${Math.round(nextData.mod * 100)}%</span>`;
         }
-
-        let costString = nextData ? `$${nextData.cost}` : "MAX OUT";
-        let disabled = !nextData || p.credits < nextData.cost;
-        
-        upHTML += `
-            <tr>
-                <td><strong>${curData.desc}</strong><br><small>Lvl ${lvl}</small></td>
-                <td>${specString}</td>
-                <td>${costString}</td>
-                <td><button class="btn-sm" onclick="processUpgrade('${cat}')" ${disabled ? 'disabled' : ''}>Upgrade</button></td>
-            </tr>`;
+        upHTML += `<tr><td><strong>${curData.desc}</strong><br><small>Lvl ${lvl}</small></td><td>${specString}</td><td>${nextData ? `$${nextData.cost}` : "MAX"}</td><td><button class="btn-sm" onclick="processUpgrade('${cat}')" ${!nextData || p.credits < nextData.cost ? 'disabled' : ''}>Upgrade</button></td></tr>`;
     });
     document.getElementById('upgrades-table').innerHTML = upHTML;
 }
