@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>CosmoTrader OS v2.3</title>
+    <title>CosmoTrader OS v2.4</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -286,7 +286,7 @@
     </div>
 
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v2.3 - Crew Manifest Module</span>
+        <span>🚀 CosmoTrader OS v2.4 - Locked Margins & Crew Specialists Patch</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -308,7 +308,7 @@
             <h3 style="margin-top:15px; border-bottom: 2px solid var(--shadow);">Sector Navigation</h3>
             <div class="panel" id="navigation-panel" style="min-height: 150px; padding: 5px; margin-bottom:10px;"></div>
 
-            <h3 style="margin-top:15px; border-bottom: 2px solid var(--shadow);">Vessel Customization & Crew Manifest</h3>
+            <h3 style="margin-top:15px; border-bottom: 2px solid var(--shadow);">Vessel Customization & Crew Specialist Matrix</h3>
             <div class="panel" style="overflow-x: auto; min-height: 160px; padding:2px;">
                 <table id="upgrades-table"></table>
             </div>
@@ -366,7 +366,7 @@ const SYSTEM_EVENTS = [
     { text: "⚠️ FAMINE OUTBREAK: Food values are spiking!", affectedItem: "food", multiplier: 3.2, info: "Food prices x3.2" },
     { text: "💥 SUPPLY SURGE: Ore production overflow, prices hit bottom!", affectedItem: "ore", multiplier: 0.3, info: "Ore prices x0.3" },
     { text: "💾 TECH REVOLUTION: Cybernetic engineering boom spikes microchips!", affectedItem: "tech", multiplier: 2.5, info: "Tech prices x2.5" },
-    { text: "☠️ PIRATE ACTIVITY INBOUND: Trade routes throttled. High inflation!", affectedItem: "all", multiplier: 1.6, info: "All prices x1.6" }
+    { text: "🌟 PIRATE ACTIVITY INBOUND: Trade routes throttled. High inflation!", affectedItem: "all", multiplier: 1.6, info: "All prices x1.6" }
 ];
 
 let gameState = {
@@ -376,13 +376,12 @@ let gameState = {
         maxFuel: 100,
         hull: 100,
         cargoCapacity: 15, 
-        fuelBurnRate: 15,
-        hullMod: 1.0,
-        spreadMod: 0.15, // Core 15% local market transaction fee tax
         location: "",
         cargo: { food: 0, ore: 0, tech: 0 }
     },
-    upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1, crewLvl: 1 },
+    // BROKEN DOWN CREW TRACKS INTO HIGHLY GRANULAR LEVEL INDEX POOLS
+    upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1, navCrewLvl: 1, brokerCrewLvl: 1, engCrewLvl: 1 },
+    marketBuffer: { food: 0, ore: 0, tech: 0 }, // Holds trading metrics to offset *after* warp jumps or waits
     planets: {},
     factories: {}, 
     contracts: [], 
@@ -396,6 +395,23 @@ let gameState = {
 function getCargoHoldCount() {
     let p = gameState.player;
     return p.cargo.food + p.cargo.ore + p.cargo.tech;
+}
+
+// DYNAMIC MODIFIER GETTERS LINKED DIRECTLY TO NEW CREW METRICS
+function getFuelBurnRate() {
+    let baseBurn = UPGRADE_TREE.engine[gameState.upgrades.engineLvl - 1].burn;
+    let crewDiscount = UPGRADE_TREE.navCrew[gameState.upgrades.navCrewLvl - 1].discount;
+    return Math.max(1, Math.round(baseBurn * (1 - crewDiscount)));
+}
+
+function getMarketSpread() {
+    return UPGRADE_TREE.brokerCrew[gameState.upgrades.brokerCrewLvl - 1].spread;
+}
+
+function getHullDamageModifier() {
+    let basePlating = UPGRADE_TREE.plating[gameState.upgrades.platingLvl - 1].mod;
+    let crewPlating = UPGRADE_TREE.engCrew[gameState.upgrades.engCrewLvl - 1].shield;
+    return basePlating * crewPlating;
 }
 
 function generateGalaxy() {
@@ -422,19 +438,17 @@ function generateNewContract() {
     
     let maxBaseValue = 0;
     for (let pName in gameState.planets) {
-        let planetBaseBuy = Math.round(gameState.planets[pName].dynamicPrices[itemKey] * (1 + gameState.player.spreadMod / 2));
+        let planetBaseBuy = Math.round(gameState.planets[pName].dynamicPrices[itemKey] * (1 + getMarketSpread() / 2));
         if (planetBaseBuy > maxBaseValue) maxBaseValue = planetBaseBuy;
     }
 
     let fixedPricePerUnit = Math.round(maxBaseValue * 1.30);
-    let totalPayout = fixedPricePerUnit * amount;
-
     return {
         targetPlanet: targetPlanet,
         itemKey: itemKey,
         amount: amount,
         unitValue: fixedPricePerUnit, 
-        payout: totalPayout,
+        payout: fixedPricePerUnit * amount,
         expiresIn: Math.floor(Math.random() * 4) + 5, 
         id: Math.random().toString(36).substring(2, 7)
     };
@@ -444,16 +458,14 @@ function initNewGame() {
     document.getElementById('sys-screen').classList.add('hidden');
     gameState.planets = generateGalaxy();
     gameState.factories = {};
+    gameState.marketBuffer = { food: 0, ore: 0, tech: 0 };
     gameState.player.credits = 1500;
     gameState.player.fuel = 100;
     gameState.player.maxFuel = 100;
     gameState.player.hull = 100;
     gameState.player.cargoCapacity = 15; 
-    gameState.player.fuelBurnRate = 15;
-    gameState.player.hullMod = 1.0;
-    gameState.player.spreadMod = 0.15;
     gameState.player.cargo = { food: 0, ore: 0, tech: 0 };
-    gameState.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1, crewLvl: 1 };
+    gameState.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1, navCrewLvl: 1, brokerCrewLvl: 1, engCrewLvl: 1 };
     gameState.stats = { jumpsCount: 0, turnsWaited: 0 };
     gameState.player.location = Object.keys(gameState.planets)[0];
     gameState.currentEvent = SYSTEM_EVENTS[0];
@@ -469,6 +481,18 @@ function rollNextEvent() {
 }
 
 function executeEventCycle() {
+    // 1. COMMENCE RECOVERY APPLIED FROM ACTION BUFFERED ACCUMULATIONS
+    let planet = gameState.planets[gameState.player.location];
+    for (let key in COMMODITIES) {
+        let delta = gameState.marketBuffer[key];
+        if (delta !== 0) {
+            let priceShift = Math.max(1, Math.round(COMMODITIES[key].basePrice * 0.015)) * delta;
+            planet.dynamicPrices[key] = Math.max(2, planet.dynamicPrices[key] + priceShift);
+        }
+    }
+    // Wipe local frame buffer block
+    gameState.marketBuffer = { food: 0, ore: 0, tech: 0 };
+
     gameState.currentEvent = gameState.nextEvent;
     rollNextEvent();
     
@@ -485,23 +509,27 @@ function executeEventCycle() {
     gameState.history.push(gameState.player.credits);
 }
 
+// CRITICAL REWORK: Open market reads prices cleanly without factoring temporary local frame adjustments
 function getMarketPriceData(planetName, itemKey) {
     let price = gameState.planets[planetName].dynamicPrices[itemKey];
     let ev = gameState.currentEvent;
     if (ev.affectedItem === itemKey || ev.affectedItem === "all") price = Math.round(price * ev.multiplier);
+    
+    let currentSpread = getMarketSpread();
     return {
-        buyCost: Math.max(2, Math.round(price * (1 + gameState.player.spreadMod / 2))),
-        sellValue: Math.max(1, Math.round(price * (1 - gameState.player.spreadMod / 2)))
+        buyCost: Math.max(2, Math.round(price * (1 + currentSpread / 2))),
+        sellValue: Math.max(1, Math.round(price * (1 - currentSpread / 2)))
     };
 }
 
 function travelTo(planetName) {
-    if (gameState.player.fuel >= gameState.player.fuelBurnRate) {
-        gameState.player.fuel -= gameState.player.fuelBurnRate;
+    let burn = getFuelBurnRate();
+    if (gameState.player.fuel >= burn) {
+        gameState.player.fuel -= burn;
         gameState.player.location = planetName;
         gameState.stats.jumpsCount++;
         
-        let damage = Math.floor((Math.random() * 8) + 3) * gameState.player.hullMod; 
+        let damage = Math.floor((Math.random() * 8) + 3) * getHullDamageModifier(); 
         gameState.player.hull = Math.max(0, Math.round(gameState.player.hull - damage));
         if (gameState.player.hull <= 0) { triggerEndGame(false, "HULL FAILURE"); return; }
 
@@ -582,25 +610,17 @@ function executeRepairChunk(amt, rate) {
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 function endRunDialog() {
-    if(confirm("Are you sure you want to declare emergency bankruptcy, liquidate the enterprise assets, and terminate this run?")) {
-        triggerEndGame(false, "VOLUNTARY LIQUIDATION RETIREMENT");
+    if(confirm("Are you sure you want to terminate this run?")) {
+        triggerEndGame(false, "VOLUNTARY LIQUIDATION");
     }
 }
 
 function triggerEndGame(isWin, cause) {
     let screen = document.getElementById('sys-screen');
-    let title = document.getElementById('sys-title');
-    let header = document.getElementById('sys-msg-header');
-    let statsLog = document.getElementById('sys-stats-log');
     screen.classList.remove('hidden');
-    if (isWin) {
-        title.innerText = "📢 SUCCESS: Milestone Registered";
-        header.innerText = "👑 CONGRATULATIONS EMPEROR! 👑";
-    } else {
-        title.innerText = "⚠️ FAILURE: Enterprise Ceased";
-        header.innerText = `💀 RUN TERMINATED: ${cause}`;
-    }
-    statsLog.innerText = `--- FINAL AUDIT ANALYSIS ---\nTotal Credits: $${gameState.player.credits}\nHyper-jumps: ${gameState.stats.jumpsCount}\nTurns Waited: ${gameState.stats.turnsWaited}\nFactories: ${Object.keys(gameState.factories).length}\nCargo Hold: ${getCargoHoldCount()} Units`;
+    document.getElementById('sys-title').innerText = isWin ? "📢 SUCCESS: Goal Met" : "⚠️ FAILURE: Enterprise Ended";
+    document.getElementById('sys-msg-header').innerText = isWin ? "👑 CONGRATULATIONS TYCOON! 👑" : `💀 TERMINATED: ${cause}`;
+    document.getElementById('sys-stats-log').innerText = `Total Credits: $${gameState.player.credits}\nHyper-jumps: ${gameState.stats.jumpsCount}\nTurns Waited: ${gameState.stats.turnsWaited}\nFactories Owned: ${Object.keys(gameState.factories).length}`;
 }
 
 function openGraphPopup() {
@@ -614,9 +634,7 @@ function openGraphPopup() {
         let y = (canvas.height / 4) * i;
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
-    if (data.length < 2) {
-        ctx.fillStyle = '#00ff00'; ctx.fillText("Telemetry recording... Make loops to render coordinates.", 20, 100); return;
-    }
+    if (data.length < 2) return;
     let maxVal = Math.max(...data, WIN_TARGET), minVal = 0;
     ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2; ctx.beginPath();
     for(let i=0; i<data.length; i++) {
@@ -625,9 +643,6 @@ function openGraphPopup() {
         if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
-    ctx.fillStyle = '#ffffff'; ctx.font = "10px monospace";
-    ctx.fillText(`Peak Plot Max: $${maxVal}`, 5, 15);
-    ctx.fillText(`Initial Seed: $${data[0]}`, 5, canvas.height - 5);
 }
 
 function purchaseFactory() {
@@ -651,41 +666,43 @@ function fulfillContract(id) {
     }
 }
 
+// MODIFIED TRADING: Buying/selling registers modifications exclusively into the temporary buffer arrays
 function buyItem(itemKey, amount = 1) {
-    let planet = gameState.planets[gameState.player.location];
+    let pricing = getMarketPriceData(gameState.player.location, itemKey);
     for(let i=0; i<amount; i++) {
-        let pricing = getMarketPriceData(gameState.player.location, itemKey);
         if (getCargoHoldCount() >= gameState.player.cargoCapacity || gameState.player.credits < pricing.buyCost) break;
-        gameState.player.credits -= pricing.buyCost; gameState.player.cargo[itemKey]++;
-        planet.dynamicPrices[itemKey] += Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.015));
+        gameState.player.credits -= pricing.buyCost;
+        gameState.player.cargo[itemKey]++;
+        gameState.marketBuffer[itemKey]++; // Logs transaction footprint into local buffer
     }
     updateUI();
 }
 
 function sellItem(itemKey, sellAll = false) {
-    let planet = gameState.planets[gameState.player.location];
     let amount = sellAll ? gameState.player.cargo[itemKey] : 1;
+    let pricing = getMarketPriceData(gameState.player.location, itemKey);
     for(let i=0; i<amount; i++) {
         if (gameState.player.cargo[itemKey] <= 0) break;
-        let pricing = getMarketPriceData(gameState.player.location, itemKey);
-        gameState.player.credits += pricing.sellValue; gameState.player.cargo[itemKey]--;
-        planet.dynamicPrices[itemKey] = Math.max(2, planet.dynamicPrices[itemKey] - Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.015)));
+        gameState.player.credits += pricing.sellValue;
+        gameState.player.cargo[itemKey]--;
+        gameState.marketBuffer[itemKey]--; // Decrements locally inside memory buffer
     }
     updateUI();
 }
 
 function buyMax(itemKey) { buyItem(itemKey, (gameState.player.cargoCapacity - getCargoHoldCount())); }
 
+// INDEPENDENT PROGRESSION SPECIALISTS UPGRADE MATRICES
 const UPGRADE_TREE = {
     cargo: [{ lvl: 1, cap: 15, cost: 0, desc: "Standard Freight Pod" }, { lvl: 2, cap: 35, cost: 2500, desc: "Expanded Steel Hold" }, { lvl: 3, cap: 75, cost: 6000, desc: "Sub-space Compression" }, { lvl: 4, cap: 150, cost: 12000, desc: "Giga-Bulk Cargo Hull" }],
     engine: [{ lvl: 1, burn: 15, cost: 0, desc: "Conventional Drive" }, { lvl: 2, burn: 9, cost: 2000, desc: "Ion Micro-Thrusters" }, { lvl: 3, burn: 4, cost: 5000, desc: "Warp Core Bypass" }],
     tank: [{ lvl: 1, max: 100, cost: 0, desc: "Standard Hazmat Pod" }, { lvl: 2, max: 200, cost: 1500, desc: "Reinforced Cryo-Cells" }, { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Grid" }],
     plating: [{ lvl: 1, mod: 1.0, cost: 0, desc: "Standard Alloys" }, { lvl: 2, mod: 0.7, cost: 1800, desc: "Durasteel Heat-Plates" }, { lvl: 3, mod: 0.4, cost: 4500, desc: "Magnetic Deflector Matrix" }],
     
-    // BRAND NEW CREW ENLISTMENT SPECIFICATION SYSTEM ARRAY
-    crew: [{ lvl: 1, label: "Solo Op", desc: "No Specialized Crew", cost: 0 }, 
-           { lvl: 2, label: "Navigator hired", desc: "Apprentice Navigator (-20% Warp Costs)", cost: 2500 }, 
-           { lvl: 3, label: "Quartermaster hired", desc: "Veteran Quartermaster (5% Market Tax)", cost: 5000 }]
+    // THE SEPARATED SPECIFIC CREW BRANCHES
+    navCrew: [{ lvl: 1, discount: 0.00, cost: 0, desc: "No Enlisted Navigator" }, { lvl: 2, discount: 0.15, cost: 1500, desc: "Apprentice Navigator (-15% Burn)" }, { lvl: 3, discount: 0.30, cost: 3500, desc: "Senior Helmsman (-30% Burn)" }, { lvl: 4, discount: 0.50, cost: 7000, desc: "Master Warp-Pilot (-50% Burn)" }],
+    brokerCrew: [{ lvl: 1, spread: 0.15, cost: 0, desc: "Standard Comm Terminals" }, { lvl: 2, spread: 0.10, cost: 2000, desc: "Junior Broker (10% Spread Tax)" }, { lvl: 3, spread: 0.05, cost: 4500, desc: "Veteran Liquidator (5% Spread Tax)" }, { lvl: 4, spread: 0.00, cost: 9000, desc: "Financial Syndicist (0% Spread Tax!)" }],
+    engCrew: [{ lvl: 1, shield: 1.00, cost: 0, desc: "Automated Maintenance Tools" }, { lvl: 2, shield: 0.75, cost: 1200, desc: "Apprentice Handyman (-25% Jump Dmg)" }, { lvl: 3, shield: 0.50, cost: 3000, desc: "Systems Mechanist (-50% Jump Dmg)" }, { lvl: 4, shield: 0.25, cost: 6000, desc: "Chief Engineer (-75% Jump Dmg)" }]
 };
 
 function processUpgrade(cat) {
@@ -693,21 +710,8 @@ function processUpgrade(cat) {
     let nextData = UPGRADE_TREE[cat].find(u => u.lvl === curLvl + 1);
     if(nextData && gameState.player.credits >= nextData.cost) {
         gameState.player.credits -= nextData.cost; gameState.upgrades[cat + "Lvl"]++;
-        
         if (cat === 'cargo') gameState.player.cargoCapacity = nextData.cap;
-        if (cat === 'engine') gameState.player.fuelBurnRate = nextData.burn;
-        if (cat === 'plating') gameState.player.hullMod = nextData.mod;
         if (cat === 'tank') { gameState.player.maxFuel = nextData.max; gameState.player.fuel = nextData.max; }
-        
-        // Dynamic structural shifts triggered upon crew employment unlocks
-        if (cat === 'crew') {
-            if (nextData.lvl === 2) {
-                gameState.player.fuelBurnRate = Math.round(gameState.player.fuelBurnRate * 0.80); // Locked Navigator fuel reduction bonus
-            }
-            if (nextData.lvl === 3) {
-                gameState.player.spreadMod = 0.05; // Drop local trading spread fees from 15% to 5%
-            }
-        }
         updateUI();
     }
 }
@@ -745,12 +749,12 @@ function updateUI() {
 
     let p = gameState.player, currentPlanet = gameState.planets[p.location];
     let localDockFee = PLANET_TYPES[currentPlanet.type].dockFee;
+    let burnCost = getFuelBurnRate();
 
     document.getElementById('news-ticker').innerText = `CURRENT RADAR EVENTS: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nLONG-RANGE SCANNER FORECAST: Next Cycle -> [ ${gameState.nextEvent.text.split(':')[0]} (${gameState.nextEvent.info}) ]`;
 
     let hullClass = p.hull < 35 ? "class='alert-text'" : "";
-    let fillBlocks = Math.min(10, Math.floor((p.credits / WIN_TARGET) * 10));
-    let walletProgressBar = "[" + "█".repeat(fillBlocks) + "░".repeat(10 - fillBlocks) + "]";
+    let walletProgressBar = "[" + "█".repeat(Math.min(10, Math.floor((p.credits / WIN_TARGET) * 10))) + "░".repeat(10 - Math.min(10, Math.floor((p.credits / WIN_TARGET) * 10))) + "]";
 
     document.getElementById('player-stats').innerHTML = `
         📁 <strong>Sector Node:</strong> ${p.location} (${currentPlanet.type})<br>
@@ -773,7 +777,7 @@ function updateUI() {
     for (let name in gameState.planets) {
         let target = gameState.planets[name];
         if (name === p.location) navHTML += `<div class="nav-item current-loc"><span>• ${name} (${target.type})</span><small>[ONLINE]</small></div>`;
-        else navHTML += `<div class="nav-item"><div>✈ ${name} <br><small style="color:#555;">Fuel rate: $${PLANET_TYPES[target.type].fuelCost}/G</small></div><button class="btn-sm" onclick="travelTo('${name}')" ${p.fuel < p.fuelBurnRate ? 'disabled' : ''}>Warp (-${p.fuelBurnRate}G)</button></div>`;
+        else navHTML += `<div class="nav-item"><div>✈ ${name} <br><small style="color:#555;">Fuel rate: $${PLANET_TYPES[target.type].fuelCost}/G</small></div><button class="btn-sm" onclick="travelTo('${name}')" ${p.fuel < burnCost ? 'disabled' : ''}>Warp (-${burnCost}G)</button></div>`;
     }
     document.getElementById('navigation-panel').innerHTML = navHTML;
 
@@ -793,16 +797,15 @@ function updateUI() {
     document.getElementById('net-container').innerHTML = netHTML + `</table>`;
 
     let jHTML = "";
-    if (gameState.contracts.length === 0) jHTML = "<p style='color:#666;'>No active contract logs. Check back next cycle jump.</p>";
+    if (gameState.contracts.length === 0) jHTML = "<p style='color:#666;'>No active contract logs.</p>";
     gameState.contracts.forEach(job => {
         let hasEnough = p.cargo[job.itemKey] >= job.amount, isHere = p.location === job.targetPlanet;
-        let clockClass = job.expiresIn <= 2 ? "class='alert-text'" : "";
-        jHTML += `<div class="card"><strong>💼 Manifest ID: #${job.id.toUpperCase()}</strong> <span ${clockClass}>[⏳ ${job.expiresIn} Cycles Left]</span><br>📋 Deliver: <span style="font-weight:bold;color:blue;">${job.amount} units of ${COMMODITIES[job.itemKey].name}</span><br>📍 Destination Node: <strong>${job.targetPlanet}</strong><br>💰 Locked Payout Rate: <span style="color:green;font-weight:bold;">$${job.payout} Credits ($${job.unitValue}/ea)</span><br><button class="btn-sm" onclick="fulfillContract('${job.id}')" ${(!hasEnough || !isHere) ? 'disabled' : ''} style="margin-top:5px;width:100%;">${!isHere ? "Fly to destination node" : !hasEnough ? "Lacking inventory metrics" : "🚀 EXECUTE SECURE DROP-OFF"}</button></div>`;
+        jHTML += `<div class="card"><strong>💼 Manifest ID: #${job.id.toUpperCase()}</strong> <span ${job.expiresIn<=2?"class='alert-text'":""}>[⏳ ${job.expiresIn} Left]</span><br>📋 Deliver: <span style="font-weight:bold;color:blue;">${job.amount} units of ${COMMODITIES[job.itemKey].name}</span><br>📍 Destination: <strong>${job.targetPlanet}</strong><br>💰 Reward Payout: <span style="color:green;font-weight:bold;">$${job.payout} ($${job.unitValue}/ea)</span><br><button class="btn-sm" onclick="fulfillContract('${job.id}')" ${(!hasEnough || !isHere) ? 'disabled' : ''} style="margin-top:5px;width:100%;">${!isHere ? "Fly to destination node" : !hasEnough ? "Lacking items" : "🚀 EXECUTE SECURE DROP-OFF"}</button></div>`;
     });
     document.getElementById('contracts-container').innerHTML = jHTML;
 
     let currentConfig = PLANET_TYPES[currentPlanet.type], hasFactoryHere = gameState.factories[p.location] !== undefined;
-    let aHTML = `<div class="card" style="background:#e8f0f8;"><strong>🏗️ Local Infrastructure Real Estate</strong><br>Available Option: ${currentConfig.factoryDesc}<br><button class="btn-sm" onclick="purchaseFactory()" ${hasFactoryHere || p.credits < currentConfig.factoryCost ? 'disabled' : ''} style="margin-top:5px;width:100%;">${hasFactoryHere ? "🏭 Infrastructure Active" : "Buy Plant Site"}</button></div><h4>Owned Properties</h4>`;
+    let aHTML = `<div class="card" style="background:#e8f0f8;"><strong>🏗️ Infrastructure Site</strong><br>Available Option: ${currentConfig.factoryDesc}<br><button class="btn-sm" onclick="purchaseFactory()" ${hasFactoryHere || p.credits < currentConfig.factoryCost ? 'disabled' : ''} style="margin-top:5px;width:100%;">${hasFactoryHere ? "🏭 Infrastructure Active" : "Buy Plant Site"}</button></div><h4>Owned Properties</h4>`;
     let factoryOwnedCount = 0;
     for (let fName in gameState.factories) {
         factoryOwnedCount++;
@@ -811,27 +814,34 @@ function updateUI() {
     }
     document.getElementById('assets-container').innerHTML = factoryOwnedCount === 0 ? aHTML + "<p style='color:#666;'>No active deeds.</p>" : aHTML;
 
-    // Render Integrated Upgrades + Crew Manifest table fields
-    let upHTML = `<tr><th>Module</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
-    ['cargo', 'engine', 'tank', 'plating', 'crew'].forEach(cat => {
+    // GENERATE BALANCED SPECIFICATIONS BREAKDOWN FOR SPLIT CREW ROLES
+    let upHTML = `<tr><th>Module / Specialist</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
+    ['cargo', 'engine', 'tank', 'plating', 'navCrew', 'brokerCrew', 'engCrew'].forEach(cat => {
         let lvl = gameState.upgrades[cat + "Lvl"];
         let curData = UPGRADE_TREE[cat].find(u => u.lvl === lvl), nextData = UPGRADE_TREE[cat].find(u => u.lvl === lvl + 1);
         
         let specString = "";
         if (cat === 'cargo') specString = `${curData.cap} Slots`;
-        if (cat === 'engine') specString = `-${curData.burn}G/Jump`;
+        if (cat === 'engine') specString = `-${curData.burn}G Base`;
         if (cat === 'tank') specString = `${curData.max}GW Max`;
-        if (cat === 'plating') specString = `${Math.round(curData.mod * 100)}% Damage`;
-        if (cat === 'crew') specString = `${curData.desc}`;
+        if (cat === 'plating') specString = `${Math.round(curData.mod * 100)}% Structural Hull`;
+        if (cat === 'navCrew') specString = `Warp Cost: -${Math.round(curData.discount * 100)}%`;
+        if (cat === 'brokerCrew') specString = `Market Spread: ${Math.round(curData.spread * 100)}%`;
+        if (cat === 'engCrew') specString = `Jump Damage: -${Math.round((1 - curData.shield) * 100)}%`;
 
         if (nextData) {
             if (cat === 'cargo') specString += ` <span class='upgrade-preview'>➔ ${nextData.cap}</span>`;
             if (cat === 'engine') specString += ` <span class='upgrade-preview'>➔ -${nextData.burn}G</span>`;
             if (cat === 'tank') specString += ` <span class='upgrade-preview'>➔ ${nextData.max}GW</span>`;
             if (cat === 'plating') specString += ` <span class='upgrade-preview'>➔ ${Math.round(nextData.mod * 100)}%</span>`;
-            if (cat === 'crew') specString += ` <span class='upgrade-preview'>➔ ${nextData.label}</span>`;
+            if (cat === 'navCrew') specString += ` <span class='upgrade-preview'>➔ -${Math.round(nextData.discount * 100)}%</span>`;
+            if (cat === 'brokerCrew') specString += ` <span class='upgrade-preview'>➔ ${Math.round(nextData.spread * 100)}%</span>`;
+            if (cat === 'engCrew') specString += ` <span class='upgrade-preview'>➔ -${Math.round((1 - nextData.shield) * 100)}%</span>`;
         }
-        upHTML += `<tr><td><strong>${cat==='crew'? 'Crew Quarters': curData.desc}</strong><br><small>Lvl ${lvl}</small></td><td>${specString}</td><td>${nextData ? `$${nextData.cost}` : "MAX"}</td><td><button class="btn-sm" onclick="processUpgrade('${cat}')" ${!nextData || p.credits < nextData.cost ? 'disabled' : ''}>${cat==='crew'?'Hire':'Upgrade'}</button></td></tr>`;
+        
+        let label = (cat === 'navCrew') ? "👨‍✈️ Chief Navigator" : (cat === 'brokerCrew') ? "💼 Trade Broker" : (cat === 'engCrew') ? "🔧 Chief Engineer" : curData.desc;
+        let actionTxt = ['navCrew','brokerCrew','engCrew'].includes(cat) ? 'Enlist' : 'Upgrade';
+        upHTML += `<tr><td><strong>${label}</strong><br><small>Level ${lvl}</small></td><td>${specString}</td><td>${nextData ? `$${nextData.cost}` : "MAX"}</td><td><button class="btn-sm" onclick="processUpgrade('${cat}')" ${!nextData || p.credits < nextData.cost ? 'disabled' : ''}>${actionTxt}</button></td></tr>`;
     });
     document.getElementById('upgrades-table').innerHTML = upHTML;
 }
