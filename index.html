@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>CosmoTrader OS v2.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>CosmoTrader OS v2.1.1</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -22,7 +22,7 @@
             font-size: 13px;
             color: #000;
             margin: 5px;
-            padding-bottom: 70px;
+            padding-bottom: 75px;
         }
 
         .window {
@@ -193,6 +193,7 @@
             border: 2px inset var(--shadow);
         }
 
+        /* CENTER ALIGNED RETRO BOTTOM TASKBAR DOCK */
         .taskbar-dock {
             position: fixed;
             bottom: 0;
@@ -204,10 +205,14 @@
             justify-content: space-around;
             padding: 4px;
             z-index: 999;
+            gap: 2px;
         }
 
         .dock-tab {
             flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
             padding: 6px 2px;
             font-size: 11px;
@@ -218,6 +223,7 @@
             border-bottom: 2px solid var(--shadow);
             background: var(--face);
             max-width: 110px;
+            min-height: 42px; /* Uniform height for touch devices */
         }
 
         .dock-tab.active-tab {
@@ -281,7 +287,7 @@
     </div>
 
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v2.1 - Speculation Module Patch</span>
+        <span>🚀 CosmoTrader OS v2.1.1 - Speculation Module Patch</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -388,6 +394,11 @@ let gameState = {
     activeView: 'status'
 };
 
+function getCargoHoldCount() {
+    let p = gameState.player;
+    return p.cargo.food + p.cargo.ore + p.cargo.tech;
+}
+
 function generateGalaxy() {
     let generatedPlanets = {};
     let shuffledNames = [...PLANET_NAMES].sort(() => 0.5 - Math.random()).slice(0, 4);
@@ -404,21 +415,18 @@ function generateGalaxy() {
     return generatedPlanets;
 }
 
-// --- NEW WORK CONTRACT ALGORITHM MECHANICS TYPE 1 & 2 ---
 function generateNewContract() {
     let keys = Object.keys(gameState.planets);
     let targetPlanet = keys[Math.floor(Math.random() * keys.length)];
     let itemKey = Object.keys(COMMODITIES)[Math.floor(Math.random() * 3)];
-    let amount = Math.floor(Math.random() * 8) + 4; // 4 to 12 items
+    let amount = Math.floor(Math.random() * 8) + 4; 
     
-    // Find the single highest *normal baseline buy price* anywhere in the current galaxy generation seed
     let maxBaseValue = 0;
     for (let pName in gameState.planets) {
         let planetBaseBuy = Math.round(gameState.planets[pName].dynamicPrices[itemKey] * (1 + MARKET_SPREAD / 2));
         if (planetBaseBuy > maxBaseValue) maxBaseValue = planetBaseBuy;
     }
 
-    // Fixed formula computation: highest baseline buy price + 25% premium reward calculation
     let fixedPricePerUnit = Math.round(maxBaseValue * 1.25);
     let totalPayout = fixedPricePerUnit * amount;
 
@@ -426,9 +434,9 @@ function generateNewContract() {
         targetPlanet: targetPlanet,
         itemKey: itemKey,
         amount: amount,
-        unitValue: fixedPricePerUnit, // Locked constant metric indicator
+        unitValue: fixedPricePerUnit, 
         payout: totalPayout,
-        expiresIn: Math.floor(Math.random() * 4) + 5, // Ticking clock: 5 to 8 turns/jumps
+        expiresIn: Math.floor(Math.random() * 4) + 5, 
         id: Math.random().toString(36).substring(2, 7)
     };
 }
@@ -464,7 +472,6 @@ function executeEventCycle() {
     gameState.currentEvent = gameState.nextEvent;
     rollNextEvent();
     
-    // Process ticking clock expiration parameter indices
     gameState.contracts.forEach(c => c.expiresIn--);
     gameState.contracts = gameState.contracts.filter(c => c.expiresIn > 0);
 
@@ -563,7 +570,6 @@ function buyFuelChunk(amt, rate) {
     }
 }
 
-// Fixed macro execution array elements
 function executeRepairChunk(amt, rate) {
     let cost = amt * rate;
     if(gameState.player.credits >= cost) {
@@ -755,8 +761,6 @@ function updateUI() {
     }
     document.getElementById('navigation-panel').innerHTML = navHTML;
 
-    // Render Local Market
-    document.getElementById('market-title').innerText = `Local Matrix: ${currentPlanet.name}`;
     let marketHTML = `<table><tr><th>Asset</th><th>Buy</th><th>Sell</th><th>Protocols</th></tr>`;
     for (let key in COMMODITIES) {
         let pricing = getMarketPriceData(p.location, key);
@@ -765,7 +769,6 @@ function updateUI() {
     }
     document.getElementById('market-container').innerHTML = marketHTML + `</table>`;
 
-    // Render Net Scanner
     let netHTML = `<table><tr><th>Node</th><th>🌾Food</th><th>🪨Ore</th><th>💾Tech</th></tr>`;
     for (let name in gameState.planets) {
         let f = getMarketPriceData(name, 'food'), o = getMarketPriceData(name, 'ore'), t = getMarketPriceData(name, 'tech');
@@ -773,26 +776,15 @@ function updateUI() {
     }
     document.getElementById('net-container').innerHTML = netHTML + `</table>`;
 
-    // Render Contracts board with fixed parameters and countdown clocks
     let jHTML = "";
     if (gameState.contracts.length === 0) jHTML = "<p style='color:#666;'>No active contract logs. Check back next cycle jump.</p>";
     gameState.contracts.forEach(job => {
         let hasEnough = p.cargo[job.itemKey] >= job.amount, isHere = p.location === job.targetPlanet;
         let clockClass = job.expiresIn <= 2 ? "class='alert-text'" : "";
-        jHTML += `
-            <div class="card">
-                <strong>💼 Manifest ID: #${job.id.toUpperCase()}</strong> <span ${clockClass}>[⏳ ${job.expiresIn} Cycles Left]</span><br>
-                📋 Deliver: <span style="font-weight:bold;color:blue;">${job.amount} units of ${COMMODITIES[job.itemKey].name}</span><br>
-                📍 Destination Node: <strong>${job.targetPlanet}</strong><br>
-                💰 Locked Payout Rate: <span style="color:green;font-weight:bold;">$${job.payout} Credits ($${job.unitValue}/ea)</span><br>
-                <button class="btn-sm" onclick="fulfillContract('${job.id}')" ${(!hasEnough || !isHere) ? 'disabled' : ''} style="margin-top:5px;width:100%;">
-                    ${!isHere ? "Fly to destination node" : !hasEnough ? "Lacking inventory metrics" : "🚀 EXECUTE SECURE DROP-OFF"}
-                </button>
-            </div>`;
+        jHTML += `<div class="card"><strong>💼 Manifest ID: #${job.id.toUpperCase()}</strong> <span ${clockClass}>[⏳ ${job.expiresIn} Cycles Left]</span><br>📋 Deliver: <span style="font-weight:bold;color:blue;">${job.amount} units of ${COMMODITIES[job.itemKey].name}</span><br>📍 Destination Node: <strong>${job.targetPlanet}</strong><br>💰 Locked Payout Rate: <span style="color:green;font-weight:bold;">$${job.payout} Credits ($${job.unitValue}/ea)</span><br><button class="btn-sm" onclick="fulfillContract('${job.id}')" ${(!hasEnough || !isHere) ? 'disabled' : ''} style="margin-top:5px;width:100%;">${!isHere ? "Fly to destination node" : !hasEnough ? "Lacking inventory metrics" : "🚀 EXECUTE SECURE DROP-OFF"}</button></div>`;
     });
     document.getElementById('contracts-container').innerHTML = jHTML;
 
-    // Render Assets Tab
     let currentConfig = PLANET_TYPES[currentPlanet.type], hasFactoryHere = gameState.factories[p.location] !== undefined;
     let aHTML = `<div class="card" style="background:#e8f0f8;"><strong>🏗️ Local Infrastructure Real Estate</strong><br>Available Option: ${currentConfig.factoryDesc}<br><button class="btn-sm" onclick="purchaseFactory()" ${hasFactoryHere || p.credits < currentConfig.factoryCost ? 'disabled' : ''} style="margin-top:5px;width:100%;">${hasFactoryHere ? "🏭 Infrastructure Active" : "Buy Plant Site"}</button></div><h4>Owned Properties</h4>`;
     let factoryOwnedCount = 0;
@@ -803,7 +795,6 @@ function updateUI() {
     }
     document.getElementById('assets-container').innerHTML = factoryOwnedCount === 0 ? aHTML + "<p style='color:#666;'>No active deeds.</p>" : aHTML;
 
-    // Render Embedded Upgrades Table
     let upHTML = `<tr><th>Module</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
     ['cargo', 'engine', 'tank', 'plating'].forEach(cat => {
         let lvl = gameState.upgrades[cat + "Lvl"];
