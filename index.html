@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>CosmoTrader OS v1.6</title>
+    <title>CosmoTrader OS v1.7</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -36,6 +36,7 @@
             width: 100%;
             max-width: 920px;
             margin: 0 auto;
+            position: relative;
         }
 
         .title-bar {
@@ -151,19 +152,35 @@
             background: #d4d0c8;
             border: 1px inset var(--shadow);
         }
-
-        .win-btn {
-            background: #ffcc00;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 5px;
-            border: 2px solid #000;
-            padding: 10px;
-        }
         
         .hidden { display: none !important; }
         .alert-text { color: red; font-weight: bold; }
         .upgrade-preview { color: #008000; font-weight: bold; }
+
+        /* WIN SCREEN MODAL MODIFICATIONS */
+        .win-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 128, 128, 0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .win-dialog {
+            background: var(--face);
+            border-top: 2px solid var(--light);
+            border-left: 2px solid var(--light);
+            border-right: 2px solid var(--shadow);
+            border-bottom: 2px solid var(--shadow);
+            box-shadow: 2px 2px 10px #000;
+            width: 100%;
+            max-width: 450px;
+            padding: 15px;
+            text-align: center;
+        }
 
         .taskbar-dock {
             position: fixed;
@@ -206,8 +223,21 @@
 <body>
 
 <div class="window">
+    <div id="win-screen" class="win-overlay hidden">
+        <div class="win-dialog">
+            <div class="title-bar" style="margin-bottom:15px;">
+                <span>📢 System Notification: Corporate Success</span>
+            </div>
+            <p style="font-size:16px; font-weight:bold; margin-bottom:10px;">👑 CONGRATULATIONS CAPTAIN! 👑</p>
+            <p style="line-height:1.5; margin-bottom:20px;">
+                You have successfully secured <strong>$50,000 Credits</strong> in liquid capital assets. The corporate board has approved your immediate luxury retirement package out of this trading cluster.
+            </p>
+            <button onclick="initNewGame()" style="width:100%; padding:10px; background:#ffcc00; border:2px solid #000;">BEGIN NEW RUN</button>
+        </div>
+    </div>
+
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v1.6 - Interface Optimization Patch</span>
+        <span>🚀 CosmoTrader OS v1.7 - Automation Engine</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -221,12 +251,9 @@
     <div class="ticker-tape" id="news-ticker">SYSTEM INITIALIZATION...</div>
 
     <div class="window-body">
-        
         <div id="view-status" class="mobile-view active-view">
             <h3 style="margin-top:0; border-bottom: 2px solid var(--shadow);">User Account Profile</h3>
-            <div class="panel" id="player-stats" style="min-height: 155px; line-height: 1.6; margin-bottom:10px;">Loading...</div>
-
-            <button id="retire-btn" class="win-btn" onclick="attemptRetirement()">✨ SECURE RETIREMENT TICKET ✨</button>
+            <div class="panel" id="player-stats" style="min-height: 165px; line-height: 1.6; margin-bottom:10px;">Loading...</div>
             
             <h3 style="margin-top:15px; border-bottom: 2px solid var(--shadow);">Sector Navigation</h3>
             <div class="panel" id="navigation-panel" style="min-height: 180px; padding: 5px;"></div>
@@ -249,7 +276,6 @@
                 <table id="upgrades-table"></table>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -278,7 +304,6 @@ const PLANET_TYPES = {
 
 const PLANET_NAMES = ["Alpha Centauri", "Kepler-186", "Gliese-581", "Tau Ceti", "Epsilon Eridani", "Wolf 359"];
 
-// Added short economic explanation impacts directly onto the items configuration
 const SYSTEM_EVENTS = [
     { text: "🌟 Normal trading corridors maintained across the cluster.", affectedItem: null, multiplier: 1.0, info: "Stable" },
     { text: "⚠️ FAMINE OUTBREAK: Food values are spiking!", affectedItem: "food", multiplier: 3.2, info: "Food prices x3.2" },
@@ -295,7 +320,7 @@ let gameState = {
         hull: 100,
         cargoCapacity: 10,
         fuelBurnRate: 15,
-        hullMod: 1.0, // Multiplier for structural damage decay speed
+        hullMod: 1.0, 
         location: "",
         cargo: { food: 0, ore: 0, tech: 0 },
         upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 }
@@ -326,6 +351,7 @@ function generateGalaxy() {
 }
 
 function initNewGame() {
+    document.getElementById('win-screen').classList.add('hidden'); // Close win screen if active
     gameState.planets = generateGalaxy();
     gameState.player.credits = 1200;
     gameState.player.fuel = 100;
@@ -384,13 +410,26 @@ function getCargoHoldCount() {
     return p.cargo.food + p.cargo.ore + p.cargo.tech;
 }
 
+// TEXT PROGRESS BAR UTILITY FUNCTION
+function getProgressBar(value, max) {
+    let totalBlocks = 10;
+    let filledBlocks = Math.min(totalBlocks, Math.floor((value / max) * totalBlocks));
+    let emptyBlocks = totalBlocks - filledBlocks;
+    return "[" + "█".repeat(filledBlocks) + "░".repeat(emptyBlocks) + "]";
+}
+
+function checkWinCondition() {
+    if (gameState.player.credits >= WIN_TARGET) {
+        document.getElementById('win-screen').classList.remove('hidden');
+    }
+}
+
 function travelTo(planetName) {
     let fuelCost = gameState.player.fuelBurnRate;
     if (gameState.player.fuel >= fuelCost) {
         gameState.player.fuel -= fuelCost;
         gameState.player.location = planetName;
         
-        // Structural damage scaled down by user's armor plating modifier value
         let damage = Math.floor((Math.random() * 8) + 3) * gameState.player.hullMod; 
         gameState.player.hull = Math.max(0, Math.round(gameState.player.hull - damage));
         
@@ -496,7 +535,6 @@ function buyMax(itemKey) {
     buyItem(itemKey, freeSlots);
 }
 
-// Expanded Upgrade Specifications Map data arrays to compute UI "+Δ" shifts cleanly
 const UPGRADE_TREE = {
     cargo: [
         { lvl: 1, cap: 10, cost: 0, desc: "Standard Freight Pod" },
@@ -538,13 +576,6 @@ function processUpgrade(cat) {
     }
 }
 
-function attemptRetirement() {
-    if (gameState.player.credits >= WIN_TARGET) {
-        alert("👑 RETIREMENT PROTOCOL GRANTED. VICTORY INITIALIZED!");
-        initNewGame();
-    }
-}
-
 function switchMobileView(viewId) {
     gameState.activeView = viewId;
     ['status', 'market', 'net', 'upgrades'].forEach(v => {
@@ -576,19 +607,23 @@ function importSave(event) {
 }
 
 function updateUI() {
+    // Intercept win parameter check immediately inside UI update phase
+    checkWinCondition();
+
     let p = gameState.player;
     let currentPlanet = gameState.planets[p.location];
     let localFuelRate = PLANET_TYPES[currentPlanet.type].fuelCost;
     let localRepairRate = PLANET_TYPES[currentPlanet.type].repairCost;
     let localDockFee = PLANET_TYPES[currentPlanet.type].dockFee;
 
-    // Ticker injects short explicit math logs for clarify
     document.getElementById('news-ticker').innerText = `RADAR ANOMALIES: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nFORECAST SATELLITE TELEMETRY: Next Event scheduled -> [ ${gameState.nextEvent.text.split(':')[0]} ]`;
 
     let hullClass = p.hull < 35 ? "class='alert-text'" : "";
+    let walletProgressBar = getProgressBar(p.credits, WIN_TARGET);
+
     document.getElementById('player-stats').innerHTML = `
         📁 <strong>Sector Location:</strong> ${p.location} (${currentPlanet.type})<br>
-        💸 <strong>Net Liquidity:</strong> $${p.credits}<br>
+        💸 <strong>Net Liquidity:</strong> $${p.credits} / $${WIN_TARGET} <span style="font-family:monospace;color:#000080;">${walletProgressBar}</span><br>
         🛡️ <span ${hullClass}><strong>Hull Structure:</strong> ${p.hull}%</span><br>
         🔋 <strong>Fuel Cells:</strong> ${p.fuel} / ${p.maxFuel} GW<br>
         📦 <strong>Cargo Space:</strong> ${getCargoHoldCount()} / ${p.cargoCapacity} Units
@@ -601,8 +636,6 @@ function updateUI() {
             <button class="btn-sm" style="background:#ffdddd;" onclick="waitTurn()">⏳ Wait Turn ($${localDockFee})</button>
         </div>
     `;
-
-    document.getElementById('retire-btn').disabled = (p.credits < WIN_TARGET);
 
     let navHTML = "";
     for (let name in gameState.planets) {
@@ -665,7 +698,7 @@ function updateUI() {
     netHTML += `</table>`;
     document.getElementById('net-container').innerHTML = netHTML;
 
-    // View 3: Upgrades Table featuring UX changes
+    // View 3: Upgrades Table
     let upHTML = `<tr><th>Module</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
     ['cargo', 'engine', 'tank', 'plating'].forEach(cat => {
         let lvl = p.upgrades[cat + "Lvl"];
