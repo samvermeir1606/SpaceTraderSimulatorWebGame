@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>CosmoTrader OS v1.5</title>
+    <title>CosmoTrader OS v1.6</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -22,7 +22,7 @@
             font-size: 13px;
             color: #000;
             margin: 5px;
-            padding-bottom: 70px; /* Space for the mobile taskbar dock */
+            padding-bottom: 70px;
         }
 
         .window {
@@ -34,7 +34,7 @@
             box-shadow: 1px 1px 0px var(--dark-shadow);
             padding: 2px;
             width: 100%;
-            max-width: 900px;
+            max-width: 920px;
             margin: 0 auto;
         }
 
@@ -64,8 +64,9 @@
             margin: 5px;
             border: 2px inset var(--shadow);
             font-weight: bold;
-            font-size: 12px;
-            line-height: 1.3;
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: pre-line;
         }
 
         .window-body {
@@ -85,19 +86,16 @@
             min-height: 200px;
         }
 
-        /* Responsive Mobile Layout Toggles */
-        .mobile-sections { display: block; }
         .mobile-view { display: none; }
         .mobile-view.active-view { display: block; }
 
-        /* Touch-friendly Buttons */
         button {
             background: var(--face);
             border-top: 2px solid var(--light);
             border-left: 2px solid var(--light);
             border-right: 2px solid var(--shadow);
             border-bottom: 2px solid var(--shadow);
-            padding: 8px 12px; /* Enriched for fingers */
+            padding: 8px 12px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
@@ -116,8 +114,8 @@
             cursor: not-allowed;
         }
 
-        .btn-sm { padding: 4px 8px; font-size: 11px; }
-        .btn-danger { color: #800000; }
+        .btn-sm { padding: 4px 6px; font-size: 11px; }
+        .btn-dock { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
 
         table {
             width: 100%;
@@ -146,7 +144,6 @@
             align-items: center;
             padding: 8px;
             margin-bottom: 5px;
-            border: 1px inset transparent;
             background: #f0f0f0;
         }
         
@@ -166,8 +163,8 @@
         
         .hidden { display: none !important; }
         .alert-text { color: red; font-weight: bold; }
+        .upgrade-preview { color: #008000; font-weight: bold; }
 
-        /* TASKBAR NAVIGATION DOCK (Mobile Bottom Bar) */
         .taskbar-dock {
             position: fixed;
             bottom: 0;
@@ -175,7 +172,6 @@
             width: 100%;
             background: var(--face);
             border-top: 3px solid var(--light);
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
             display: flex;
             justify-content: space-around;
             padding: 4px;
@@ -202,21 +198,16 @@
             border-right: 2px solid var(--light);
             border-bottom: 2px solid var(--light);
             background: #fff;
-            box-shadow: inset 1px 1px 1px #000;
         }
 
-        .market-actions-cell {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
+        .market-actions-cell { display: flex; gap: 4px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
 
 <div class="window">
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v1.5 [MOBILE EDITION]</span>
+        <span>🚀 CosmoTrader OS v1.6 - Interface Optimization Patch</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -227,17 +218,13 @@
         <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importSave(event)">
     </div>
 
-    <div class="ticker-tape" id="news-ticker">
-        SYSTEM LOG: POWERING UP CAPTAIN...
-    </div>
+    <div class="ticker-tape" id="news-ticker">SYSTEM INITIALIZATION...</div>
 
     <div class="window-body">
         
         <div id="view-status" class="mobile-view active-view">
             <h3 style="margin-top:0; border-bottom: 2px solid var(--shadow);">User Account Profile</h3>
-            <div class="panel" id="player-stats" style="min-height: 140px; line-height: 1.6; margin-bottom:10px;">Loading...</div>
-
-            <button id="wait-btn" class="win-btn btn-danger" onclick="waitTurn()" style="background:#ff9999; margin-bottom:15px;">⏳ WAIT 1 CYCLE HERE</button>
+            <div class="panel" id="player-stats" style="min-height: 155px; line-height: 1.6; margin-bottom:10px;">Loading...</div>
 
             <button id="retire-btn" class="win-btn" onclick="attemptRetirement()">✨ SECURE RETIREMENT TICKET ✨</button>
             
@@ -252,12 +239,12 @@
 
         <div id="view-net" class="mobile-view">
             <h3 style="margin-top: 0;">Remote Market Scanners</h3>
-            <p style="color: #444; margin-top:0; font-size:11px;">Real-time synchronized long-range sub-space telemetry.</p>
+            <p style="color: #444; margin-top:0; font-size:11px;">Synchronized baseline price matrix before real-time event multipliers.</p>
             <div class="panel" id="net-container" style="overflow-x: auto;"></div>
         </div>
 
         <div id="view-upgrades" class="mobile-view">
-            <h3 style="margin-top: 0;">Vessel Customization & Repair Facility</h3>
+            <h3 style="margin-top: 0;">Vessel Customization & Engineering</h3>
             <div class="panel" id="upgrades-container" style="overflow-x: auto;">
                 <table id="upgrades-table"></table>
             </div>
@@ -291,12 +278,13 @@ const PLANET_TYPES = {
 
 const PLANET_NAMES = ["Alpha Centauri", "Kepler-186", "Gliese-581", "Tau Ceti", "Epsilon Eridani", "Wolf 359"];
 
+// Added short economic explanation impacts directly onto the items configuration
 const SYSTEM_EVENTS = [
-    { text: "🌟 Normal trading corridors maintained across the cluster.", affectedItem: null, multiplier: 1.0 },
-    { text: "⚠️ FAMINE OUTBREAK: Food values are spiking!", affectedItem: "food", multiplier: 3.2 },
-    { text: "💥 SECTOR SUPPLY SURGE: Ore production overflow, prices hit bottom!", affectedItem: "ore", multiplier: 0.3 },
-    { text: "💾 TECH REVOLUTION: Cybernetic engineering boom spikes microcircuit costs!", affectedItem: "tech", multiplier: 2.5 },
-    { text: "☠️ PIRATE ACTIVITY INBOUND: Trade routes throttled. Prices highly inflated!", affectedItem: "all", multiplier: 1.6 }
+    { text: "🌟 Normal trading corridors maintained across the cluster.", affectedItem: null, multiplier: 1.0, info: "Stable" },
+    { text: "⚠️ FAMINE OUTBREAK: Food values are spiking!", affectedItem: "food", multiplier: 3.2, info: "Food prices x3.2" },
+    { text: "💥 SECTOR SUPPLY SURGE: Ore production overflow, prices hit bottom!", affectedItem: "ore", multiplier: 0.3, info: "Ore prices x0.3" },
+    { text: "💾 TECH REVOLUTION: Cybernetic engineering boom spikes microcircuit costs!", affectedItem: "tech", multiplier: 2.5, info: "Tech prices x2.5" },
+    { text: "☠️ PIRATE ACTIVITY INBOUND: Trade routes throttled. Prices highly inflated!", affectedItem: "all", multiplier: 1.6, info: "All prices x1.6" }
 ];
 
 let gameState = {
@@ -307,9 +295,10 @@ let gameState = {
         hull: 100,
         cargoCapacity: 10,
         fuelBurnRate: 15,
+        hullMod: 1.0, // Multiplier for structural damage decay speed
         location: "",
         cargo: { food: 0, ore: 0, tech: 0 },
-        upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1 }
+        upgrades: { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 }
     },
     planets: {},
     currentEvent: SYSTEM_EVENTS[0],
@@ -344,8 +333,9 @@ function initNewGame() {
     gameState.player.hull = 100;
     gameState.player.cargoCapacity = 10;
     gameState.player.fuelBurnRate = 15;
+    gameState.player.hullMod = 1.0;
     gameState.player.cargo = { food: 0, ore: 0, tech: 0 };
-    gameState.player.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1 };
+    gameState.player.upgrades = { cargoLvl: 1, engineLvl: 1, tankLvl: 1, platingLvl: 1 };
     gameState.player.location = Object.keys(gameState.planets)[0];
     gameState.currentEvent = SYSTEM_EVENTS[0];
     rollNextEvent();
@@ -362,7 +352,6 @@ function executeEventCycle() {
     gameState.currentEvent = gameState.nextEvent;
     rollNextEvent();
     
-    // Simulate slight organic shift back toward equilibrium baseline
     for (let pName in gameState.planets) {
         let planet = gameState.planets[pName];
         let pConfig = PLANET_TYPES[planet.type];
@@ -401,10 +390,12 @@ function travelTo(planetName) {
         gameState.player.fuel -= fuelCost;
         gameState.player.location = planetName;
         
-        let damage = Math.floor(Math.random() * 8) + 3; 
-        gameState.player.hull -= damage;
+        // Structural damage scaled down by user's armor plating modifier value
+        let damage = Math.floor((Math.random() * 8) + 3) * gameState.player.hullMod; 
+        gameState.player.hull = Math.max(0, Math.round(gameState.player.hull - damage));
+        
         if (gameState.player.hull <= 0) {
-            alert("💀 HULL COLLAPSED IN WARP ROUTE. GAME OVER.");
+            alert("💀 HULL PLATING SHATTERED. GAME OVER.");
             initNewGame();
             return;
         }
@@ -416,22 +407,16 @@ function travelTo(planetName) {
     }
 }
 
-// --- NEW STRATEGY PROTOCOL: WAIT TURN ---
 function waitTurn() {
     let currentPlanet = gameState.planets[gameState.player.location];
     let fee = PLANET_TYPES[currentPlanet.type].dockFee;
     
     if (gameState.player.credits >= fee) {
         gameState.player.credits -= fee;
-        
-        // Cycle events and drift the market while staying put
         executeEventCycle();
         updateUI();
-        
-        // Subtle alert layout for text ticker feedback
-        alert(`⏳ Day Cycle Expired.\nPaid $${fee} Credits in local hangar docking fees and life-support power allocations.`);
     } else {
-        alert("💀 INHABITATION FAULT: You don't have enough credits to cover basic docking overhead fees. Local authorities seized your ship assets. GAME OVER.");
+        alert("💀 SHIP IMPOUNDED: Insufficient balance to cover docking overhead fees. GAME OVER.");
         initNewGame();
     }
 }
@@ -511,11 +496,12 @@ function buyMax(itemKey) {
     buyItem(itemKey, freeSlots);
 }
 
+// Expanded Upgrade Specifications Map data arrays to compute UI "+Δ" shifts cleanly
 const UPGRADE_TREE = {
     cargo: [
         { lvl: 1, cap: 10, cost: 0, desc: "Standard Freight Pod" },
         { lvl: 2, cap: 25, cost: 2500, desc: "Expanded Steel Hold" },
-        { lvl: 3, cap: 60, cost: 6000, desc: "Sub-space Compression Matrix" },
+        { lvl: 3, cap: 60, cost: 6000, desc: "Sub-space Compression" },
         { lvl: 4, cap: 120, cost: 12000, desc: "Giga-Bulk Cargo Hull" }
     ],
     engine: [
@@ -526,7 +512,12 @@ const UPGRADE_TREE = {
     tank: [
         { lvl: 1, max: 100, cost: 0, desc: "Standard Hazmat Pod" },
         { lvl: 2, max: 200, cost: 1500, desc: "Reinforced Cryo-Cells" },
-        { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Container" }
+        { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Grid" }
+    ],
+    plating: [
+        { lvl: 1, mod: 1.0, cost: 0, desc: "Standard Alloys" },
+        { lvl: 2, mod: 0.7, cost: 1800, desc: "Durasteel Heat-Plates" },
+        { lvl: 3, mod: 0.4, cost: 4500, desc: "Magnetic Deflector Matrix" }
     ]
 };
 
@@ -534,11 +525,14 @@ function processUpgrade(cat) {
     let curLvl = gameState.player.upgrades[cat + "Lvl"];
     let nextData = UPGRADE_TREE[cat].find(u => u.lvl === curLvl + 1);
     if(!nextData) return;
+    
     if(gameState.player.credits >= nextData.cost) {
         gameState.player.credits -= nextData.cost;
         gameState.player.upgrades[cat + "Lvl"]++;
+        
         if (cat === 'cargo') gameState.player.cargoCapacity = nextData.cap;
         if (cat === 'engine') gameState.player.fuelBurnRate = nextData.burn;
+        if (cat === 'plating') gameState.player.hullMod = nextData.mod;
         if (cat === 'tank') { gameState.player.maxFuel = nextData.max; gameState.player.fuel = nextData.max; }
         updateUI();
     }
@@ -546,25 +540,20 @@ function processUpgrade(cat) {
 
 function attemptRetirement() {
     if (gameState.player.credits >= WIN_TARGET) {
-        alert("👑 CONGRATULATIONS CAPTAIN! You bought your ticket out of the trading sector. VICTORY!");
+        alert("👑 RETIREMENT PROTOCOL GRANTED. VICTORY INITIALIZED!");
         initNewGame();
     }
 }
 
-// --- NEW MOBILE VIEW CONTROLLER ---
 function switchMobileView(viewId) {
     gameState.activeView = viewId;
-    
-    // Hide all view wrappers
     ['status', 'market', 'net', 'upgrades'].forEach(v => {
         document.getElementById(`view-${v}`).classList.remove('active-view');
         document.getElementById(`tab-${v}`).classList.remove('active-tab');
     });
-    
-    // Activate target screen and taskbar tab layout
     document.getElementById(`view-${viewId}`).classList.add('active-view');
     document.getElementById(`tab-${viewId}`).classList.add('active-tab');
-    window.scrollTo(0,0); // Reset viewport position for smaller device screens
+    window.scrollTo(0,0);
 }
 
 function exportSave() {
@@ -581,7 +570,6 @@ function importSave(event) {
         try {
             gameState = JSON.parse(e.target.result);
             switchMobileView(gameState.activeView || 'status'); updateUI();
-            alert("Profile sync restored.");
         } catch (err) { alert("Format failure."); }
     };
     reader.readAsText(file);
@@ -594,10 +582,8 @@ function updateUI() {
     let localRepairRate = PLANET_TYPES[currentPlanet.type].repairCost;
     let localDockFee = PLANET_TYPES[currentPlanet.type].dockFee;
 
-    document.getElementById('news-ticker').innerText = `RADAR: ${gameState.currentEvent.text} \n|| NET SATELLITE RADAR FORECAST: [ Next Event: ${gameState.nextEvent.text.split(':')[0]} ]`;
-
-    // Wait text injector layout modifications
-    document.getElementById('wait-btn').innerText = `⏳ WAIT 1 CYCLE HERE (-$${localDockFee} fee)`;
+    // Ticker injects short explicit math logs for clarify
+    document.getElementById('news-ticker').innerText = `RADAR ANOMALIES: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nFORECAST SATELLITE TELEMETRY: Next Event scheduled -> [ ${gameState.nextEvent.text.split(':')[0]} ]`;
 
     let hullClass = p.hull < 35 ? "class='alert-text'" : "";
     document.getElementById('player-stats').innerHTML = `
@@ -609,9 +595,10 @@ function updateUI() {
         <div style="padding-left:10px; font-size:12px; color:#555; margin-top:2px;">
             🌾 Food: ${p.cargo.food} | 🪨 Ore: ${p.cargo.ore} | 💾 Tech: ${p.cargo.tech}
         </div>
-        <div style="margin-top:8px; display:flex; gap:4px;">
+        <div class="btn-dock">
             <button class="btn-sm" onclick="refuelShip()">⚡ Refuel ($${localFuelRate}/G)</button>
             <button class="btn-sm" onclick="repairShip()">🔧 Repair ($${localRepairRate}/%)</button>
+            <button class="btn-sm" style="background:#ffdddd;" onclick="waitTurn()">⏳ Wait Turn ($${localDockFee})</button>
         </div>
     `;
 
@@ -658,16 +645,18 @@ function updateUI() {
     marketHTML += `</table>`;
     document.getElementById('market-container').innerHTML = marketHTML;
 
-    // View 2: System Net Scanner
-    let netHTML = `<table><tr><th>Node</th><th>🌾Food</th><th>🪨Ore</th><th>💾Tech</th></tr>`;
+    // View 2: System Net
+    let netHTML = `<table><tr><th>Node Node</th><th>🌾Food</th><th>🪨Ore</th><th>💾Tech</th></tr>`;
     for (let name in gameState.planets) {
         let foodP = getMarketPriceData(name, 'food');
         let oreP = getMarketPriceData(name, 'ore');
         let techP = getMarketPriceData(name, 'tech');
         let isHere = (name === p.location) ? "style='background:#ffffd0;'" : "";
+        
+        let activeTag = (name === p.location && gameState.currentEvent.affectedItem) ? ` <small style="color:red;">[AMPLIFIED]</small>` : "";
         netHTML += `
             <tr ${isHere}>
-                <td><strong>${name}</strong><br><small>${gameState.planets[name].type.substring(0,4)}.</small></td>
+                <td><strong>${name}</strong><br><small>${gameState.planets[name].type.substring(0,4)}.${activeTag}</small></td>
                 <td>$${foodP.buyCost}/$${foodP.sellValue}</td>
                 <td>$${oreP.buyCost}/$${oreP.sellValue}</td>
                 <td>$${techP.buyCost}/$${techP.sellValue}</td>
@@ -676,15 +665,27 @@ function updateUI() {
     netHTML += `</table>`;
     document.getElementById('net-container').innerHTML = netHTML;
 
-    // View 3: Upgrades Table
+    // View 3: Upgrades Table featuring UX changes
     let upHTML = `<tr><th>Module</th><th>Specifications</th><th>Cost</th><th>Action</th></tr>`;
-    ['cargo', 'engine', 'tank'].forEach(cat => {
+    ['cargo', 'engine', 'tank', 'plating'].forEach(cat => {
         let lvl = p.upgrades[cat + "Lvl"];
         let curData = UPGRADE_TREE[cat].find(u => u.lvl === lvl);
         let nextData = UPGRADE_TREE[cat].find(u => u.lvl === lvl + 1);
         
-        let specString = cat === 'cargo' ? `${curData.cap} slots` : cat === 'engine' ? `-${curData.burn}G` : `${curData.max}GW`;
-        let costString = nextData ? `$${nextData.cost}` : "MAX";
+        let specString = "";
+        if (cat === 'cargo') specString = `${curData.cap} Slots`;
+        if (cat === 'engine') specString = `-${curData.burn}G/Jump`;
+        if (cat === 'tank') specString = `${curData.max}GW Max`;
+        if (cat === 'plating') specString = `${Math.round(curData.mod * 100)}% Damage`;
+
+        if (nextData) {
+            if (cat === 'cargo') specString += ` <span class='upgrade-preview'>➔ ${nextData.cap}</span>`;
+            if (cat === 'engine') specString += ` <span class='upgrade-preview'>➔ -${nextData.burn}G</span>`;
+            if (cat === 'tank') specString += ` <span class='upgrade-preview'>➔ ${nextData.max}GW</span>`;
+            if (cat === 'plating') specString += ` <span class='upgrade-preview'>➔ ${Math.round(nextData.mod * 100)}%</span>`;
+        }
+
+        let costString = nextData ? `$${nextData.cost}` : "MAX OUT";
         let disabled = !nextData || p.credits < nextData.cost;
         
         upHTML += `
