@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>CosmoTrader OS v2.1.1</title>
+    <title>CosmoTrader OS v2.2</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -193,7 +193,6 @@
             border: 2px inset var(--shadow);
         }
 
-        /* CENTER ALIGNED RETRO BOTTOM TASKBAR DOCK */
         .taskbar-dock {
             position: fixed;
             bottom: 0;
@@ -223,7 +222,7 @@
             border-bottom: 2px solid var(--shadow);
             background: var(--face);
             max-width: 110px;
-            min-height: 42px; /* Uniform height for touch devices */
+            min-height: 42px;
         }
 
         .dock-tab.active-tab {
@@ -287,7 +286,7 @@
     </div>
 
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v2.1.1 - Speculation Module Patch</span>
+        <span>🚀 CosmoTrader OS v2.2 - Rebalanced Progression Blueprint</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -355,10 +354,11 @@ const COMMODITIES = {
     tech: { name: "Quantum Chips", basePrice: 120 }
 };
 
+// Halved waiting/dock fees, and reduced factory purchasing costs by 10%
 const PLANET_TYPES = {
-    "Agricultural": { modifiers: { food: 0.5, ore: 1.1, tech: 1.5 }, fuelCost: 4, repairCost: 15, dockFee: 40, factoryDesc: "Hydroponic Greenhouse ($4k) - Produces Food", factoryCost: 4000, factoryProduces: "food" },
-    "Mining":       { modifiers: { food: 1.3, ore: 0.4, tech: 1.2 }, fuelCost: 1, repairCost: 20, dockFee: 25, factoryDesc: "Deep Core Driller ($6k) - Produces Ore", factoryCost: 6000, factoryProduces: "ore" },
-    "Industrial":   { modifiers: { food: 1.5, ore: 1.3, tech: 0.5 }, fuelCost: 2, repairCost: 8,  dockFee: 60, factoryDesc: "Micro-Fab Array ($12k) - Produces Tech", factoryCost: 12000, factoryProduces: "tech" }
+    "Agricultural": { modifiers: { food: 0.5, ore: 1.1, tech: 1.5 }, fuelCost: 4, repairCost: 15, dockFee: 20, factoryDesc: "Hydroponic Greenhouse ($3.6k) - Produces Food", factoryCost: 3600, factoryProduces: "food" },
+    "Mining":       { modifiers: { food: 1.3, ore: 0.4, tech: 1.2 }, fuelCost: 1, repairCost: 20, dockFee: 12, factoryDesc: "Deep Core Driller ($5.4k) - Produces Ore", factoryCost: 5400, factoryProduces: "ore" },
+    "Industrial":   { modifiers: { food: 1.5, ore: 1.3, tech: 0.5 }, fuelCost: 2, repairCost: 8,  dockFee: 30, factoryDesc: "Micro-Fab Array ($10.8k) - Produces Tech", factoryCost: 10800, factoryProduces: "tech" }
 };
 
 const PLANET_NAMES = ["Alpha Centauri", "Kepler-186", "Gliese-581", "Tau Ceti", "Epsilon Eridani", "Wolf 359"];
@@ -377,7 +377,7 @@ let gameState = {
         fuel: 100,
         maxFuel: 100,
         hull: 100,
-        cargoCapacity: 10,
+        cargoCapacity: 15, // Upgraded initial storage space baseline to 15
         fuelBurnRate: 15,
         hullMod: 1.0, 
         location: "",
@@ -427,7 +427,8 @@ function generateNewContract() {
         if (planetBaseBuy > maxBaseValue) maxBaseValue = planetBaseBuy;
     }
 
-    let fixedPricePerUnit = Math.round(maxBaseValue * 1.25);
+    // Increased contract premium payout margin from +25% to +30% (+5% increase)
+    let fixedPricePerUnit = Math.round(maxBaseValue * 1.30);
     let totalPayout = fixedPricePerUnit * amount;
 
     return {
@@ -449,7 +450,7 @@ function initNewGame() {
     gameState.player.fuel = 100;
     gameState.player.maxFuel = 100;
     gameState.player.hull = 100;
-    gameState.player.cargoCapacity = 10;
+    gameState.player.cargoCapacity = 15; // Hard reset initial size check parameters
     gameState.player.fuelBurnRate = 15;
     gameState.player.hullMod = 1.0;
     gameState.player.cargo = { food: 0, ore: 0, tech: 0 };
@@ -657,7 +658,9 @@ function buyItem(itemKey, amount = 1) {
         let pricing = getMarketPriceData(gameState.player.location, itemKey);
         if (getCargoHoldCount() >= gameState.player.cargoCapacity || gameState.player.credits < pricing.buyCost) break;
         gameState.player.credits -= pricing.buyCost; gameState.player.cargo[itemKey]++;
-        planet.dynamicPrices[itemKey] += Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.03));
+        
+        // Halved elasticity price modifier calculation from 0.03 to 0.015 (prices don't rise as fast)
+        planet.dynamicPrices[itemKey] += Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.015));
     }
     updateUI();
 }
@@ -669,15 +672,18 @@ function sellItem(itemKey, sellAll = false) {
         if (gameState.player.cargo[itemKey] <= 0) break;
         let pricing = getMarketPriceData(gameState.player.location, itemKey);
         gameState.player.credits += pricing.sellValue; gameState.player.cargo[itemKey]--;
-        planet.dynamicPrices[itemKey] = Math.max(2, planet.dynamicPrices[itemKey] - Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.03)));
+        
+        // Halved price dump modifier from 0.03 to 0.015 (prices don't drop as fast)
+        planet.dynamicPrices[itemKey] = Math.max(2, planet.dynamicPrices[itemKey] - Math.max(1, Math.round(COMMODITIES[itemKey].basePrice * 0.015)));
     }
     updateUI();
 }
 
 function buyMax(itemKey) { buyItem(itemKey, (gameState.player.cargoCapacity - getCargoHoldCount())); }
 
+// Rebalanced cargo capacity progression tier array slots following starting baseline of 15
 const UPGRADE_TREE = {
-    cargo: [{ lvl: 1, cap: 10, cost: 0, desc: "Standard Freight Pod" }, { lvl: 2, cap: 25, cost: 2500, desc: "Expanded Steel Hold" }, { lvl: 3, cap: 60, cost: 6000, desc: "Sub-space Compression" }, { lvl: 4, cap: 120, cost: 12000, desc: "Giga-Bulk Cargo Hull" }],
+    cargo: [{ lvl: 1, cap: 15, cost: 0, desc: "Standard Freight Pod" }, { lvl: 2, cap: 35, cost: 2500, desc: "Expanded Steel Hold" }, { lvl: 3, cap: 75, cost: 6000, desc: "Sub-space Compression" }, { lvl: 4, cap: 150, cost: 12000, desc: "Giga-Bulk Cargo Hull" }],
     engine: [{ lvl: 1, burn: 15, cost: 0, desc: "Conventional Drive" }, { lvl: 2, burn: 9, cost: 2000, desc: "Ion Micro-Thrusters" }, { lvl: 3, burn: 4, cost: 5000, desc: "Warp Core Bypass" }],
     tank: [{ lvl: 1, max: 100, cost: 0, desc: "Standard Hazmat Pod" }, { lvl: 2, max: 200, cost: 1500, desc: "Reinforced Cryo-Cells" }, { lvl: 3, max: 400, cost: 4000, desc: "Anti-matter Grid" }],
     plating: [{ lvl: 1, mod: 1.0, cost: 0, desc: "Standard Alloys" }, { lvl: 2, mod: 0.7, cost: 1800, desc: "Durasteel Heat-Plates" }, { lvl: 3, mod: 0.4, cost: 4500, desc: "Magnetic Deflector Matrix" }]
