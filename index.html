@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>CosmoTrader OS v3.3.1</title>
+    <title>CosmoTrader OS v3.3.2</title>
     <style>
         :root {
             --win-bg: #008080;
@@ -299,7 +299,7 @@
     </div>
 
     <div class="title-bar">
-        <span>🚀 CosmoTrader OS v3.3.1 - Asset Mapping Fix</span>
+        <span>🚀 CosmoTrader OS v3.3.2 - Stable Engine Patch</span>
         <span style="font-size: 11px;">🗙</span>
     </div>
     
@@ -723,17 +723,17 @@ const UPGRADE_TREE = {
 };
 
 function processUpgrade(cat) {
-    let curLvl = gameState.upgrades[cat + "Lvl"], nextData = UPGRADE_TREE[cat].find(u => u.lvl === curLvl + 1);
+    playSound('click'); let curLvl = gameState.upgrades[cat + "Lvl"], nextData = UPGRADE_TREE[cat].find(u => u.lvl === curLvl + 1);
     if(nextData && gameState.player.credits >= nextData.cost) {
         gameState.player.credits -= nextData.cost; gameState.upgrades[cat + "Lvl"]++;
         if (cat === 'cargo') gameState.player.cargoCapacity = nextData.cap;
         if (cat === 'tank') { gameState.player.maxFuel = nextData.max; gameState.player.fuel = nextData.max; }
-        updateUI();
+        addTerminalLog(`[UPGRADE]: Installed ${nextData.desc || cat} hardware mod for $${nextData.cost}.`); updateUI();
     }
 }
 
 function switchMobileView(viewId) {
-    gameState.activeView = viewId;
+    playSound('click'); gameState.activeView = viewId;
     ['status', 'market', 'net', 'contracts', 'assets'].forEach(v => { document.getElementById(`view-${v}`).classList.remove('active-view'); document.getElementById(`tab-${v}`).classList.remove('active-tab'); });
     document.getElementById(`view-${viewId}`).classList.add('active-view'); document.getElementById(`tab-${viewId}`).classList.add('active-tab'); window.scrollTo(0,0);
 }
@@ -753,7 +753,10 @@ function updateUI() {
     if (gameState.player.credits >= WIN_TARGET) { triggerEndGame(true); return; }
 
     let p = gameState.player, currentPlanet = gameState.planets[p.location];
+    if (!currentPlanet) return;
+    
     let localDockFee = PLANET_TYPES[currentPlanet.type].dockFee, burnCost = getFuelBurnRate();
+    let hasFactoryHere = gameState.factories[p.location] !== undefined;
     
     document.getElementById('news-ticker').innerText = `[SENSORS]: ${gameState.currentEvent.text} [${gameState.currentEvent.info}]\nLONG-RANGE SCANNER FORECAST: Next Cycle -> [ ${gameState.nextEvent.text.split(':')[0]} (${gameState.nextEvent.info}) ]`;
 
